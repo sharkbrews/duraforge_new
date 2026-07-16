@@ -13,7 +13,7 @@
 **Repo:** https://github.com/sharkbrews/duraforge_new  (branch: `main`)
 **Local folder:** /Users/tushar/Documents/duraforge
 **Created:** 2026-07-16
-**Last updated:** 2026-07-16 (Stage 3 built — awaiting approval)
+**Last updated:** 2026-07-16 (Stage 3 committed + pushed)
 
 ---
 
@@ -251,8 +251,7 @@ Legend: [ ] todo · [~] in progress · [x] done · [!] blocked/needs Tushar
 - [x] Admin APIs: `PATCH /api/admin/orders/[orderNumber]`, `PATCH /api/admin/enquiries/[id]`
 - [x] Header shows **Admin** link when signed in as admin
 - [x] Build clean (54 routes); smoke-tested (contact, enquiry, admin pages, status update → picking)
-- [x] Tushar reviewed + approved
-- [ ] On approval: commit + push Stage 3
+- [x] Committed + pushed Stage 3 (ac043fd)
 
 **How to test Stage 3:**
 1. **Customer tracking:** Sign in as a trade account → Account → Orders → **Track order** on any order
@@ -279,6 +278,9 @@ _(empty)_
 
 ## 9. SESSION LOG (newest first)
 
+- **2026-07-16 (Composer) — Stage 3 committed + pushed:** Commit `ac043fd` on `main`.
+  Order tracking, admin panel, contact/enquiry inbox live. NEXT UP: Stage 4 (DuraCoins,
+  campaigns, real Stripe, deploy to Vercel).
 - **2026-07-16 (Composer) — Stage 3 built:** Order tracking + admin panel complete. Extended
   Prisma schema (Product with admin-only cost columns, Enquiry, OrderStatusEvent, carrier/tracking
   on orders). Seeded 24 products + admin user (`admin@duraforge.co.uk`). Customer 5-stage
