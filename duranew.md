@@ -13,7 +13,7 @@
 **Repo:** https://github.com/sharkbrews/duraforge_new  (branch: `main`)
 **Local folder:** /Users/tushar/Documents/duraforge
 **Created:** 2026-07-16
-**Last updated:** 2026-07-16 (Stage 2.5 — DB + auth built, awaiting commit approval)
+**Last updated:** 2026-07-16 (Stage 2.5 committed + pushed)
 
 ---
 
@@ -205,7 +205,7 @@ Legend: [ ] todo · [~] in progress · [x] done · [!] blocked/needs Tushar
 - [x] Tushar reviewed + approved
 - [x] Committed + pushed Stage 2 (1ba5363)
 
-### Stage 2.5 — Database + Real Auth (Opus) ✅ built, awaiting commit approval
+### Stage 2.5 — Database + Real Auth (Opus) ✅
 - [x] Local PostgreSQL installed (Homebrew `postgresql@16`) + `duraforge` database created
 - [x] Prisma added (v6) — schema: `User`, `Order`, `OrderLineItem`, NextAuth models, enums
       (`Role`, `OrderStatus`, `PaymentMethod`). Migration `init` applied.
@@ -217,7 +217,7 @@ Legend: [ ] todo · [~] in progress · [x] done · [!] blocked/needs Tushar
 - [x] `web/.env` (gitignored) + `web/.env.example` for other machines/deploys
 - [x] `build` script runs `prisma generate`; build clean; full flow smoke-tested (register →
       NextAuth login → order `DRG-ORD-2026-0002`); wrong password correctly rejected
-- [x] Tushar approves → commit + push Stage 2.5
+- [x] Committed + pushed Stage 2.5 (23ae95e)
 
 **Local DB notes (important):**
 - Postgres runs via `brew services start postgresql@16`. Binaries live at
@@ -250,6 +250,9 @@ _(empty)_
 
 ## 9. SESSION LOG (newest first)
 
+- **2026-07-16 (Claude/Opus) — Stage 2.5 committed + pushed:** Commit `23ae95e` on `main`.
+  Prisma + Postgres + NextAuth now live. JSON file store removed. NEXT UP: **Stage 3 with
+  Composer** (order tracking + admin panel).
 - **2026-07-16 (Claude/Opus) — Stage 2.5: Database + real auth:** Replaced the temporary
   file-based JSON store with a proper database and real authentication. Installed local
   PostgreSQL 16 (Homebrew), added Prisma (v6) with a full schema (User/Order/OrderLineItem +
