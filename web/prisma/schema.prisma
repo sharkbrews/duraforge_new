@@ -66,11 +66,86 @@ model Order {
   shipPostcode  String
 
   notes         String?
+  carrier       String?
+  trackingNumber String?
+  statusUpdatedAt DateTime @default(now())
   createdAt     DateTime      @default(now())
 
   lineItems     OrderLineItem[]
+  statusEvents  OrderStatusEvent[]
 
   @@index([userId])
+  @@index([status])
+}
+
+model OrderStatusEvent {
+  id        String      @id @default(cuid())
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  status    OrderStatus
+  note      String?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId])
+}
+
+/// Product catalogue — cost columns are ADMIN ONLY and must never reach customer APIs.
+model Product {
+  id               String   @id @default(cuid())
+  sku              String   @unique
+  partCode         String
+  name             String
+  brand            String
+  brandSlug        String
+  model            String
+  position         String
+  material         String
+  rodMm            Float
+  boreMm           Float
+  heightMm         Float
+  hardnessShoreA   Int
+  tempMinC         Int
+  tempMaxC         Int
+  pressureBar      Int
+  contents         Json
+  fits             Json
+  crossRefs        Json
+  salePriceExVat   Float
+  fpePrice         Float
+  purchasePriceInr Float
+  purchasePriceGbp Float
+  landingPriceGbp  Float
+  stockQty         Int
+  madeIn           String   @default("India")
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([brandSlug])
+  @@index([isActive])
+}
+
+enum EnquiryStatus {
+  NEW
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+/// Inbound contact / trade enquiry from the website.
+model Enquiry {
+  id          String        @id @default(cuid())
+  name        String
+  companyName String?
+  email       String
+  phone       String?
+  message     String
+  status      EnquiryStatus @default(NEW)
+  createdAt   DateTime      @default(now())
+  readAt      DateTime?
+
+  @@index([status])
+  @@index([createdAt])
 }
 
 model OrderLineItem {

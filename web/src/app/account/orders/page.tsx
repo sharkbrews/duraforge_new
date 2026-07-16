@@ -64,6 +64,12 @@ export default async function OrdersPage() {
               <p className="mt-3 font-semibold text-navy">
                 {gbp(order.totalIncVat)} inc-VAT
               </p>
+              <Link
+                href={`/account/orders/${encodeURIComponent(order.orderNumber)}`}
+                className="mt-3 inline-block text-sm font-semibold text-orange hover:underline"
+              >
+                Track order →
+              </Link>
             </li>
           ))}
         </ul>

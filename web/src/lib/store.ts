@@ -1,8 +1,12 @@
 import { prisma } from "./prisma";
 import type {
   Address,
+  AdminProduct,
+  Enquiry,
+  EnquiryStatus,
   Order,
   OrderLineItem,
+  OrderStatusEvent,
   PaymentMethod,
   PickPackStatus,
   User,
@@ -11,8 +15,11 @@ import type {
 import type {
   Order as DbOrder,
   OrderLineItem as DbOrderLineItem,
+  OrderStatusEvent as DbOrderStatusEvent,
   Prisma,
   User as DbUser,
+  Enquiry as DbEnquiry,
+  Product as DbProduct,
 } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -39,7 +46,12 @@ function mapUser(row: DbUser): User {
   };
 }
 
-function mapOrder(row: DbOrder & { lineItems: DbOrderLineItem[] }): Order {
+function mapOrder(
+  row: DbOrder & {
+    lineItems: DbOrderLineItem[];
+    statusEvents?: DbOrderStatusEvent[];
+  },
+): Order {
   const address: Address = {
     line1: row.shipLine1,
     line2: row.shipLine2 ?? undefined,
@@ -47,6 +59,14 @@ function mapOrder(row: DbOrder & { lineItems: DbOrderLineItem[] }): Order {
     county: row.shipCounty ?? undefined,
     postcode: row.shipPostcode,
   };
+  const statusEvents: OrderStatusEvent[] = (row.statusEvents ?? [])
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    .map((e) => ({
+      status: e.status.toLowerCase() as PickPackStatus,
+      note: e.note ?? undefined,
+      createdAt: e.createdAt.toISOString(),
+    }));
+
   return {
     id: row.id,
     orderNumber: row.orderNumber,
@@ -67,6 +87,10 @@ function mapOrder(row: DbOrder & { lineItems: DbOrderLineItem[] }): Order {
     shippingAddress: address,
     billingAddress: address,
     notes: row.notes ?? undefined,
+    carrier: row.carrier ?? undefined,
+    trackingNumber: row.trackingNumber ?? undefined,
+    statusUpdatedAt: row.statusUpdatedAt.toISOString(),
+    statusEvents,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -123,7 +147,7 @@ export async function createUser(input: CreateUserInput): Promise<User> {
 export async function getOrdersForUser(userId: string): Promise<Order[]> {
   const rows = await prisma.order.findMany({
     where: { userId },
-    include: { lineItems: true },
+    include: { lineItems: true, statusEvents: true },
     orderBy: { createdAt: "desc" },
   });
   return rows.map(mapOrder);
@@ -134,7 +158,7 @@ export async function getOrderByNumber(
 ): Promise<Order | undefined> {
   const row = await prisma.order.findUnique({
     where: { orderNumber },
-    include: { lineItems: true },
+    include: { lineItems: true, statusEvents: true },
   });
   return row ? mapOrder(row) : undefined;
 }
@@ -197,9 +221,195 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
             unitPriceExVat: li.unitPriceExVat,
           })),
         },
+        statusEvents: {
+          create: { status: "RECEIVED" },
+        },
       },
-      include: { lineItems: true },
+      include: { lineItems: true, statusEvents: true },
     });
   });
   return mapOrder(row);
+}
+
+// ---------------------------------------------------------------------------
+// Admin — orders
+// ---------------------------------------------------------------------------
+
+export async function getAllOrders(status?: PickPackStatus): Promise<Order[]> {
+  const rows = await prisma.order.findMany({
+    where: status
+      ? {
+          status: status.toUpperCase() as
+            | "RECEIVED"
+            | "PICKING"
+            | "PACKED"
+            | "DESPATCHED"
+            | "DELIVERED",
+        }
+      : undefined,
+    include: { lineItems: true, statusEvents: true },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(mapOrder);
+}
+
+export interface UpdateOrderStatusInput {
+  orderNumber: string;
+  status: PickPackStatus;
+  carrier?: string;
+  trackingNumber?: string;
+  note?: string;
+}
+
+export async function updateOrderStatus(
+  input: UpdateOrderStatusInput,
+): Promise<Order | undefined> {
+  const dbStatus = input.status.toUpperCase() as
+    | "RECEIVED"
+    | "PICKING"
+    | "PACKED"
+    | "DESPATCHED"
+    | "DELIVERED";
+
+  const row = await prisma.$transaction(async (tx) => {
+    const updated = await tx.order.update({
+      where: { orderNumber: input.orderNumber },
+      data: {
+        status: dbStatus,
+        statusUpdatedAt: new Date(),
+        carrier: input.carrier?.trim() || undefined,
+        trackingNumber: input.trackingNumber?.trim() || undefined,
+      },
+      include: { lineItems: true, statusEvents: true },
+    });
+
+    await tx.orderStatusEvent.create({
+      data: {
+        orderId: updated.id,
+        status: dbStatus,
+        note: input.note?.trim() || null,
+      },
+    });
+
+    return tx.order.findUnique({
+      where: { id: updated.id },
+      include: { lineItems: true, statusEvents: true },
+    });
+  });
+
+  return row ? mapOrder(row) : undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Admin — products (cost columns included — never expose to customers)
+// ---------------------------------------------------------------------------
+
+function mapAdminProduct(row: DbProduct): AdminProduct {
+  const marginPct =
+    row.salePriceExVat > 0
+      ? Math.round(
+          ((row.salePriceExVat - row.landingPriceGbp) / row.salePriceExVat) * 100,
+        )
+      : 0;
+  return {
+    id: row.id,
+    sku: row.sku,
+    partCode: row.partCode,
+    name: row.name,
+    brand: row.brand,
+    brandSlug: row.brandSlug,
+    model: row.model,
+    position: row.position,
+    material: row.material,
+    salePriceExVat: row.salePriceExVat,
+    fpePrice: row.fpePrice,
+    purchasePriceInr: row.purchasePriceInr,
+    purchasePriceGbp: row.purchasePriceGbp,
+    landingPriceGbp: row.landingPriceGbp,
+    stockQty: row.stockQty,
+    marginPct,
+    isActive: row.isActive,
+  };
+}
+
+export async function getAdminProducts(): Promise<AdminProduct[]> {
+  const rows = await prisma.product.findMany({
+    orderBy: [{ brand: "asc" }, { name: "asc" }],
+  });
+  return rows.map(mapAdminProduct);
+}
+
+// ---------------------------------------------------------------------------
+// Enquiries
+// ---------------------------------------------------------------------------
+
+function mapEnquiry(row: DbEnquiry): Enquiry {
+  return {
+    id: row.id,
+    name: row.name,
+    companyName: row.companyName ?? undefined,
+    email: row.email,
+    phone: row.phone ?? undefined,
+    message: row.message,
+    status: row.status.toLowerCase() as EnquiryStatus,
+    createdAt: row.createdAt.toISOString(),
+    readAt: row.readAt?.toISOString(),
+  };
+}
+
+export interface CreateEnquiryInput {
+  name: string;
+  companyName?: string;
+  email: string;
+  phone?: string;
+  message: string;
+}
+
+export async function createEnquiry(input: CreateEnquiryInput): Promise<Enquiry> {
+  const row = await prisma.enquiry.create({
+    data: {
+      name: input.name.trim(),
+      companyName: input.companyName?.trim() || null,
+      email: input.email.trim().toLowerCase(),
+      phone: input.phone?.trim() || null,
+      message: input.message.trim(),
+    },
+  });
+  return mapEnquiry(row);
+}
+
+export async function getEnquiries(status?: EnquiryStatus): Promise<Enquiry[]> {
+  const rows = await prisma.enquiry.findMany({
+    where: status
+      ? {
+          status: status.toUpperCase() as "NEW" | "READ" | "REPLIED" | "ARCHIVED",
+        }
+      : undefined,
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(mapEnquiry);
+}
+
+export async function getEnquiryById(id: string): Promise<Enquiry | undefined> {
+  const row = await prisma.enquiry.findUnique({ where: { id } });
+  return row ? mapEnquiry(row) : undefined;
+}
+
+export async function updateEnquiryStatus(
+  id: string,
+  status: EnquiryStatus,
+): Promise<Enquiry | undefined> {
+  const row = await prisma.enquiry.update({
+    where: { id },
+    data: {
+      status: status.toUpperCase() as "NEW" | "READ" | "REPLIED" | "ARCHIVED",
+      readAt:
+        status === "read" || status === "replied" ? new Date() : undefined,
+    },
+  });
+  return mapEnquiry(row);
+}
+
+export async function countNewEnquiries(): Promise<number> {
+  return prisma.enquiry.count({ where: { status: "NEW" } });
 }

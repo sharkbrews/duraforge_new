@@ -54,7 +54,52 @@ export interface Order {
   shippingAddress: Address;
   billingAddress: Address;
   notes?: string;
+  carrier?: string;
+  trackingNumber?: string;
+  statusUpdatedAt: string;
+  statusEvents: OrderStatusEvent[];
   createdAt: string;
+}
+
+export interface OrderStatusEvent {
+  status: PickPackStatus;
+  note?: string;
+  createdAt: string;
+}
+
+export type EnquiryStatus = "new" | "read" | "replied" | "archived";
+
+export interface Enquiry {
+  id: string;
+  name: string;
+  companyName?: string;
+  email: string;
+  phone?: string;
+  message: string;
+  status: EnquiryStatus;
+  createdAt: string;
+  readAt?: string;
+}
+
+/** Admin-only product row — includes cost columns. Never send to customers. */
+export interface AdminProduct {
+  id: string;
+  sku: string;
+  partCode: string;
+  name: string;
+  brand: string;
+  brandSlug: string;
+  model: string;
+  position: string;
+  material: string;
+  salePriceExVat: number;
+  fpePrice: number;
+  purchasePriceInr: number;
+  purchasePriceGbp: number;
+  landingPriceGbp: number;
+  stockQty: number;
+  marginPct: number;
+  isActive: boolean;
 }
 
 export interface CartItem {

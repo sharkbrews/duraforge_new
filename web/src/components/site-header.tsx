@@ -55,6 +55,14 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {user?.role === "admin" && (
+            <Link
+              href="/admin"
+              className="hidden rounded-md px-3 py-2 text-sm font-semibold text-orange hover:text-orange-300 sm:block"
+            >
+              Admin
+            </Link>
+          )}
           <Link
             href="/account"
             className="hidden max-w-[140px] truncate rounded-md px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:text-white sm:block"

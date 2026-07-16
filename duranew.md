@@ -13,7 +13,7 @@
 **Repo:** https://github.com/sharkbrews/duraforge_new  (branch: `main`)
 **Local folder:** /Users/tushar/Documents/duraforge
 **Created:** 2026-07-16
-**Last updated:** 2026-07-16 (Stage 2.5 committed + pushed)
+**Last updated:** 2026-07-16 (Stage 3 built — awaiting approval)
 
 ---
 
@@ -235,7 +235,36 @@ Legend: [ ] todo · [~] in progress · [x] done · [!] blocked/needs Tushar
 5. Complete mock payment → see confirmation with order number (e.g. `DRG-ORD-2026-0001`)
 6. Check **Account → Orders** for order history
 
-*(Stage 3 tasks will be expanded when we reach them.)*
+*(Stage 4 tasks will be expanded when we reach them.)*
+
+### Stage 3 — Order Tracking + Admin
+- [x] Prisma extended: `Product`, `Enquiry`, `OrderStatusEvent`, order tracking fields
+      (`carrier`, `trackingNumber`, `statusUpdatedAt`)
+- [x] Products seeded into Postgres (24 kits) with **admin-only cost columns** (purchase/landing
+      prices — never exposed to customer APIs)
+- [x] Admin user seeded: `admin@duraforge.co.uk` / `DuraAdmin2026!` (change before go-live)
+- [x] Customer **Pick-Pack-Ship tracker** — 5-stage visual timeline on
+      `/account/orders/[orderNumber]`
+- [x] **Admin panel** at `/admin` (role-guarded): dashboard, orders (filter + status update),
+      products (cost columns + margin), enquiry inbox
+- [x] **Contact page** `/contact` + enquiry API (`POST /api/enquiries`)
+- [x] Admin APIs: `PATCH /api/admin/orders/[orderNumber]`, `PATCH /api/admin/enquiries/[id]`
+- [x] Header shows **Admin** link when signed in as admin
+- [x] Build clean (54 routes); smoke-tested (contact, enquiry, admin pages, status update → picking)
+- [x] Tushar reviewed + approved
+- [ ] On approval: commit + push Stage 3
+
+**How to test Stage 3:**
+1. **Customer tracking:** Sign in as a trade account → Account → Orders → **Track order** on any order
+2. **Contact form:** Open `/contact`, submit an enquiry → check it appears in admin inbox
+3. **Admin panel:** Sign in as `admin@duraforge.co.uk` / `DuraAdmin2026!` → `/admin`
+   - **Orders:** open an order, tap a status stage (Received → Picking → Packed → Despatched → Delivered)
+   - For **Despatched**, enter carrier + tracking number
+   - **Products:** verify cost columns visible (amber highlight) — customers never see these
+   - **Enquiries:** mark messages read/replied/archived
+
+**Run seed on a fresh machine:** `cd web && npm run db:seed` (after migrate)
+
 
 ---
 
@@ -250,6 +279,13 @@ _(empty)_
 
 ## 9. SESSION LOG (newest first)
 
+- **2026-07-16 (Composer) — Stage 3 built:** Order tracking + admin panel complete. Extended
+  Prisma schema (Product with admin-only cost columns, Enquiry, OrderStatusEvent, carrier/tracking
+  on orders). Seeded 24 products + admin user (`admin@duraforge.co.uk`). Customer 5-stage
+  Pick-Pack-Ship tracker on `/account/orders/[orderNumber]`. Admin at `/admin`: dashboard, orders
+  (5-button status update), products (cost/margin table), enquiry inbox. Contact page at
+  `/contact`. Build clean (54 routes). Smoke-tested locally. AWAITING Tushar approval to commit +
+  push. NEXT UP: Stage 4 (DuraCoins, campaigns, real Stripe, deploy).
 - **2026-07-16 (Claude/Opus) — Stage 2.5 committed + pushed:** Commit `23ae95e` on `main`.
   Prisma + Postgres + NextAuth now live. JSON file store removed. NEXT UP: **Stage 3 with
   Composer** (order tracking + admin panel).
