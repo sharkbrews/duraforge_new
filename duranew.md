@@ -197,6 +197,16 @@ _(empty)_
 
 ## 9. SESSION LOG (newest first)
 
+- **2026-07-16 (Claude/Opus) — Stage 0 pushed + Stage 1 built:** Committed & pushed Stage 0 to
+  GitHub (commit 3815f46). Then built Stage 1: real product catalogue in
+  `web/src/lib/products.ts` (24 kits across JCB/CAT/Hyva/Kubota/Takeuchi/Hyundai/Bobcat, real
+  OEM refs + dims + cross-refs; NO cost columns — sale price only, per rules). New pages: `/shop`
+  (filters + sort via `ShopBrowser`), `/shop/[brand]`, `/product/[sku]` (tabbed spec/contents/
+  fits/cross-ref via `ProductDetail`), `/finder` (`FinderTool`), `/cross-reference` (`XrefTool`).
+  Homepage Kit Finder widget + cross-ref strip now wired to real pages. Added `ProductCard`,
+  `format.ts` (gbp). Build clean (38 static pages). Live-tested on :3001 — shop, product,
+  finder, cross-ref all 200; cross-ref `332Y6440` correctly returns JCB 3DX Boom "29% cheaper".
+  AWAITING Tushar approval to commit + push Stage 1.
 - **2026-07-16 (Claude/Opus) — DECISION: keep Claude's build, drop Gemini's:** Tushar reviewed
   both and preferred the Claude/`web` version (localhost:3001). Deleted the `temp/` folder (the
   Gemini Vite build) and `gemini.md`, plus stray root artifacts (empty `package-lock.json`,

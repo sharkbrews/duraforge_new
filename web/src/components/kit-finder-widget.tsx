@@ -1,23 +1,34 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { finderBrands } from "@/lib/sample-data";
+import { useRouter } from "next/navigation";
+import {
+  finderBrandNames,
+  finderModels,
+  finderPositions,
+  findKit,
+} from "@/lib/products";
 
 export function KitFinderWidget() {
+  const router = useRouter();
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [position, setPosition] = useState("");
 
-  const models = useMemo(
-    () => finderBrands.find((b) => b.name === brand)?.models ?? [],
-    [brand],
-  );
+  const brands = useMemo(() => finderBrandNames(), []);
+  const models = useMemo(() => (brand ? finderModels(brand) : []), [brand]);
   const positions = useMemo(
-    () => models.find((m) => m.name === model)?.positions ?? [],
-    [models, model],
+    () => (brand && model ? finderPositions(brand, model) : []),
+    [brand, model],
   );
 
-  const ready = brand && model && position;
+  const ready = Boolean(brand && model && position);
+
+  function handleFind() {
+    const kit = ready ? findKit(brand, model, position) : undefined;
+    if (kit) router.push(`/product/${kit.sku}`);
+    else router.push("/finder");
+  }
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-xl ring-1 ring-black/5 sm:p-6">
@@ -37,7 +48,7 @@ export function KitFinderWidget() {
             setModel("");
             setPosition("");
           }}
-          options={finderBrands.map((b) => b.name)}
+          options={brands}
           placeholder="Pick a brand"
         />
         <Select
@@ -47,7 +58,7 @@ export function KitFinderWidget() {
             setModel(v);
             setPosition("");
           }}
-          options={models.map((m) => m.name)}
+          options={models}
           placeholder={brand ? "Pick a model" : "Brand first"}
           disabled={!brand}
         />
@@ -63,16 +74,19 @@ export function KitFinderWidget() {
 
       <button
         type="button"
+        onClick={handleFind}
         disabled={!ready}
         className="mt-4 w-full rounded-lg bg-orange px-4 py-3 font-semibold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
       >
-        {ready ? `Find ${brand} ${model} — ${position} kit →` : "Find my seal kit →"}
+        {ready ? `Find ${brand} ${model} kit →` : "Find my seal kit →"}
       </button>
 
       <p className="mt-3 text-center text-xs text-slate-brand">
         No luck?{" "}
-        <span className="font-semibold text-navy">Drop us the part number</span> and
-        we&apos;ll find your equivalent.
+        <a href="/cross-reference" className="font-semibold text-navy hover:text-orange">
+          Drop us the part number
+        </a>{" "}
+        and we&apos;ll find your equivalent.
       </p>
     </div>
   );
@@ -95,9 +109,7 @@ function Select({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-semibold text-slate-brand">
-        {label}
-      </span>
+      <span className="mb-1 block text-xs font-semibold text-slate-brand">{label}</span>
       <select
         value={value}
         disabled={disabled}

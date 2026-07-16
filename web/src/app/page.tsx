@@ -106,19 +106,12 @@ export default function Home() {
             Type an FPE, Hallite, JCB or CAT part number and we&apos;ll find your
             Duraforge equivalent — then show you how much you just saved.
           </p>
-          <form className="mt-2 flex w-full max-w-md gap-2">
-            <input
-              type="text"
-              placeholder="e.g. 332Y6440"
-              className="flex-1 rounded-lg border border-navy-700 bg-navy px-4 py-3 font-mono text-sm text-white placeholder:text-slate-500 outline-none focus:border-orange"
-            />
-            <button
-              type="button"
-              className="rounded-lg bg-orange px-5 py-3 font-semibold text-white transition-colors hover:bg-orange-600"
-            >
-              Find it
-            </button>
-          </form>
+          <Link
+            href="/cross-reference"
+            className="mt-2 rounded-lg bg-orange px-6 py-3 font-semibold text-white transition-colors hover:bg-orange-600"
+          >
+            Open Cross-Reference Lookup →
+          </Link>
         </div>
       </section>
 
