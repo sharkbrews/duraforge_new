@@ -13,7 +13,7 @@
 **Repo:** https://github.com/sharkbrews/duraforge_new  (branch: `main`)
 **Local folder:** /Users/tushar/Documents/duraforge
 **Created:** 2026-07-16
-**Last updated:** 2026-07-16 (Stage 3.5 admin security BUILT by Opus — awaiting approval to commit)
+**Last updated:** 2026-07-16 (Stage 4b payments + deploy prep BUILT — needs Tushar's live accounts to go live)
 
 ---
 
@@ -264,7 +264,7 @@ Legend: [ ] todo · [~] in progress · [x] done · [!] blocked/needs Tushar
 
 **Run seed on a fresh machine:** `cd web && npm run db:seed` (after migrate)
 
-### Stage 3.5 — Admin Security (Opus) ✅ **DONE (awaiting Tushar's approval to commit)**
+### Stage 3.5 — Admin Security (Opus) ✅ **DONE**
 > **Who:** Opus (security / auth hardening). Built 2026-07-16.
 
 **What was shipped:**
@@ -292,9 +292,62 @@ Legend: [ ] todo · [~] in progress · [x] done · [!] blocked/needs Tushar
 4. Update an order status → check `/admin/audit` shows the entry.
 > Note: MFA on the dev admin was reset to un-enrolled after testing so you can enrol with your own app.
 
-**Blockers:** Stage 4 deploy to Vercel + real Stripe can proceed once this is approved + pushed.
+**Blockers:** None — Stage 4 Composer work done; Opus can pick up 4b anytime.
 
-*(Stage 4 tasks will be expanded when we reach them.)*
+### Stage 4 — Loyalty + Marketing (Composer) ✅ **DONE**
+> **Who:** Composer (UI + loyalty logic). Built 2026-07-16.
+
+**What was shipped:**
+- [x] **DuraCoins** — £1 inc-VAT spent = 1 coin; balance on account dashboard + header badge; milestone progress bar (500 / 1000 / 2500 / 5000); PRO status at 5000 coins
+- [x] **Earn on order** — coins + ledger entry in `createOrder` transaction; shown on checkout confirmation
+- [x] **Badges** — First Seal, Big Rig (£500+ order), Machine Whisperer (5+ brands), Loyal Spanner (12 order months); grid on `/account`
+- [x] **Spin-the-wheel** — one spin per calendar month; modal on account + after qualifying orders; `POST /api/loyalty/spin`
+- [x] **Campaign pages** — `/campaigns`, `/campaigns/[slug]`; 2 seeded campaigns; admin preview at `/admin/campaigns`
+- [x] **Email event hooks** — `lib/email-events.ts` logs register/order/coins/badge/spin events (Klaviyo stub — Opus wires real API)
+- [x] **Admin customers** — `/admin/customers` with manual DuraCoin adjust + audit log
+- [x] **Static pages** — `/about`, `/faq`, `/delivery-info`, `/industries` + 4 industry sub-pages (footer links now work)
+- [x] Migration `stage4_loyalty_marketing`; build clean (~65 routes)
+
+**How to test:**
+1. Sign in → **Account** — see DuraCoins widget, badges, spin prompt
+2. Place an order → confirmation shows coins earned + spin offer
+3. `/campaigns` → open Spring offer
+4. Admin → **Customers** → adjust coins (audit entry in `/admin/audit`)
+5. Footer links: About, FAQ, Delivery, Industries
+
+### Stage 4b — Payments + Deploy ✅ **CODE DONE (needs Tushar's live accounts to switch on)**
+> Built 2026-07-16. Everything works locally with mock fallbacks; going live only
+> needs Tushar to create the external accounts and paste keys (see `web/DEPLOY.md`).
+
+**What was shipped (code):**
+- [x] **Real Stripe** — embedded Payment Element checkout; `POST /api/checkout/payment-intent`
+      (PaymentIntent) + `POST /api/stripe/webhook` (succeeded / failed / refunded). Server
+      verifies the intent succeeded & amount matches before recording the order. BACS path kept.
+- [x] **Graceful fallback** — with no Stripe keys, checkout uses the simulated flow so local dev
+      + demos still work. Card copy switches to "Secured by Stripe" once keys are set.
+- [x] **Authoritative pricing** — `lib/order-pricing.ts` prices baskets from the server catalogue
+      (never trusts client prices) for both the PaymentIntent and the order.
+- [x] **Klaviyo** — `trackEmailEvent()` now POSTs to the Klaviyo Events API when `KLAVIYO_API_KEY`
+      is set (welcome, order placed, coins earned, badge, spin); console-only otherwise.
+- [x] **VAT invoice** — HMRC-style printable invoice at
+      `/account/orders/[orderNumber]/invoice` (browser Save-as-PDF). Linked from customer +
+      admin order pages. Admins can view any invoice.
+- [x] **Deploy guide** — `web/DEPLOY.md`: Supabase/Neon Postgres, Stripe, Klaviyo, Vercel env
+      vars, first-run `prisma migrate deploy` + `db:seed`, go-live smoke test.
+- [x] New env vars in `.env.example`: `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`,
+      `STRIPE_WEBHOOK_SECRET`, `KLAVIYO_API_KEY`, `COMPANY_VAT_NUMBER`.
+- [x] Build clean; E2E tested locally (register → order → 756 coins + First Seal & Big Rig
+      badges + ledger → invoice 200 → spin prize).
+
+**What Tushar must do to GO LIVE (needs real accounts — follow `web/DEPLOY.md`):**
+- [ ] Create hosted Postgres (Supabase/Neon) → set `DATABASE_URL`
+- [ ] Create Stripe account → set `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` /
+      `STRIPE_WEBHOOK_SECRET`; enable Stripe Tax
+- [ ] (Optional) Klaviyo account → set `KLAVIYO_API_KEY`
+- [ ] Deploy to Vercel (root dir = `web`), add env vars, run `prisma migrate deploy` + `db:seed` once
+- [ ] Go-live smoke test with Stripe test card `4242 4242 4242 4242`
+
+*(Stage 5 / polish tasks will be expanded when we reach them.)*
 
 ---
 
@@ -309,14 +362,23 @@ _(empty)_
 
 ## 9. SESSION LOG (newest first)
 
-- **2026-07-16 (Opus) — Stage 3.5 admin security BUILT:** Separate `/admin/login`, TOTP MFA
-  (otpauth + QR), `ADMIN_IP_ALLOWLIST` gate in `middleware.ts`, `AuditLog` model + `/admin/audit`,
-  12h admin session expiry, and forced first-login password change + MFA enrolment. Split auth into
-  edge `auth.config.ts` + node `auth.ts`; restructured admin routes into `(panel)` (full guard) and
-  `/admin/security` (setup guard). Migration `stage35_admin_security` applied. Build clean;
-  smoke-tested end-to-end over HTTP (login → setup gate 403 → MFA enrol/verify → audit rows). Dev
-  admin MFA reset to un-enrolled so Tushar can enrol with his own app. AWAITING approval to commit +
-  push. NEXT UP: Stage 4 (deploy + real Stripe).
+- **2026-07-16 (Opus) — Stage 4b payments + deploy prep BUILT:** Real Stripe (embedded Payment
+  Element, `/api/checkout/payment-intent` + `/api/stripe/webhook`, server-side intent
+  verification, authoritative `lib/order-pricing.ts`), with mock fallback when keys absent.
+  Klaviyo Events API wired into `trackEmailEvent`. HMRC-style printable VAT invoice at
+  `/account/orders/[orderNumber]/invoice`. `web/DEPLOY.md` deployment guide + new env vars.
+  Build clean; E2E tested (register → order → 756 coins + First Seal/Big Rig badges → invoice →
+  spin). Going live only needs Tushar's Stripe/Postgres/Klaviyo/Vercel accounts. AWAITING approval
+  to commit + push (then follow DEPLOY.md to switch on).
+- **2026-07-16 (Composer) — Stage 4 loyalty + marketing BUILT:** DuraCoins (earn on order,
+  milestones, PRO status), badges, spin-the-wheel, campaign pages (2 seeded), email event hooks
+  (Klaviyo stub), admin customer coin adjust, About/FAQ/Delivery/Industries pages. Migration
+  `stage4_loyalty_marketing`. Build clean. AWAITING Tushar approval to commit + push. NEXT UP:
+  **Stage 4b with Opus** (Stripe, Vercel, hosted Postgres, Klaviyo).
+- **2026-07-16 (Opus) — Stage 3.5 committed + pushed:** Commits `e15ff2a` + `6fa3412` on `main`.
+  Separate `/admin/login`, TOTP MFA (otpauth + QR), `ADMIN_IP_ALLOWLIST` gate in `middleware.ts`,
+  `AuditLog` model + `/admin/audit`, 12h admin session expiry, forced first-login password change +
+  MFA enrolment. Migration `stage35_admin_security` applied.
 - **2026-07-16 (Composer) — Stage 3.5 task list added:** Documented admin security gap after
   Tushar review. Stage 3 has basic role checks only; Opus must add MFA, IP allowlist, audit log,
   separate admin login before go-live. NEXT UP: **Stage 3.5 with Opus** — say *"read duranew.md

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createUser, getUserByEmail } from "@/lib/store";
 import { hashPassword, toPublicUser } from "@/lib/auth";
+import { trackEmailEvent } from "@/lib/email-events";
 import type { Address } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -56,6 +57,12 @@ export async function POST(request: Request) {
       vatNumber,
       phone,
       deliveryAddress,
+    });
+
+    trackEmailEvent("user.registered", {
+      email: user.email,
+      userId: user.id,
+      companyName: user.companyName,
     });
 
     // The client signs in via NextAuth immediately after a successful register.

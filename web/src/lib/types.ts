@@ -18,6 +18,8 @@ export interface User {
   role: UserRole;
   mfaEnabled: boolean;
   mustChangePassword: boolean;
+  duraCoinsBalance: number;
+  isProMember: boolean;
   deliveryAddress: Address;
   createdAt: string;
 }
@@ -107,4 +109,42 @@ export interface AdminProduct {
 export interface CartItem {
   sku: string;
   quantity: number;
+}
+
+export interface UserBadgeEarned {
+  badgeKey: string;
+  earnedAt: string;
+}
+
+export interface LoyaltySummary {
+  balance: number;
+  isProMember: boolean;
+  nextMilestone: { coins: number; label: string } | null;
+  progressPct: number;
+  badges: UserBadgeEarned[];
+  canSpin: boolean;
+}
+
+export interface Campaign {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle?: string;
+  body: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  isActive: boolean;
+  startsAt?: string;
+  endsAt?: string;
+}
+
+export interface AdminCustomer {
+  id: string;
+  email: string;
+  companyName: string;
+  duraCoinsBalance: number;
+  isProMember: boolean;
+  orderCount: number;
+  totalSpentIncVat: number;
+  createdAt: string;
 }

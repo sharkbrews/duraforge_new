@@ -26,6 +26,11 @@ model User {
   mfaEnabled         Boolean @default(false)
   mustChangePassword Boolean @default(false)
 
+  // Loyalty (Stage 4)
+  duraCoinsBalance Int      @default(0)
+  isProMember      Boolean  @default(false)
+  lastSpinMonth    String?  // "YYYY-MM" — one spin per calendar month
+
   // Delivery address
   addressLine1 String
   addressLine2 String?
@@ -37,6 +42,9 @@ model User {
   updatedAt    DateTime @updatedAt
 
   orders       Order[]
+  coinLedger   DuraCoinLedger[]
+  badges       UserBadge[]
+  spinResults  SpinResult[]
 
   // NextAuth relations (reserved for future magic-link / OAuth)
   accounts     Account[]
@@ -230,4 +238,60 @@ model AuditLog {
 
   @@index([createdAt])
   @@index([actorId])
+}
+
+/// DuraCoin earn/spend ledger — £1 spent (inc-VAT) = 1 coin.
+model DuraCoinLedger {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  amount    Int      // positive = earn, negative = spend/adjust
+  reason    String
+  orderId   String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+/// Trade achievement badges earned by customers.
+model UserBadge {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  badgeKey  String
+  earnedAt  DateTime @default(now())
+
+  @@unique([userId, badgeKey])
+  @@index([userId])
+}
+
+/// Spin-the-wheel prize log (one spin per calendar month).
+model SpinResult {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  prizeKey  String
+  prizeLabel String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Marketing campaign landing pages (CMS-lite).
+model Campaign {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  subtitle    String?
+  body        String
+  ctaLabel    String?
+  ctaHref     String?
+  isActive    Boolean   @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([isActive])
 }

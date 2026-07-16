@@ -120,9 +120,61 @@ async function backfillOrderStatusEvents() {
   }
 }
 
+async function seedCampaigns() {
+  const campaigns = [
+    {
+      slug: "spring-seals-2026",
+      title: "Spring seal season — extra DuraCoins",
+      subtitle: "Double coins on JCB & CAT kits through April.",
+      body: `Trade-only offer for registered accounts.
+
+Order any JCB or CAT seal kit before 30 April and earn **double DuraCoins** on that order (we'll credit the bonus within 24 hours).
+
+Why now? Spring breakdown season. Machines work harder, seals work harder, you need stock on the van.
+
+• Applies to JCB and CAT branded kits in our catalogue
+• Bonus coins credited manually by our team (automated rules coming in Stage 4b)
+• Cannot be combined with other discount codes
+
+Questions? WhatsApp us or use the contact form — we're in Swanscombe, not a call centre in another timezone.`,
+      ctaLabel: "Shop JCB kits",
+      ctaHref: "/shop/jcb",
+    },
+    {
+      slug: "kent-same-day",
+      title: "Kent same-day — order before 11am",
+      subtitle: "Within 30 miles of Swanscombe. We mean it.",
+      body: `If you're in Kent, SE London, or Essex border country and you order before 11am on a working day, we'll get compatible in-stock kits to you same-day where courier capacity allows.
+
+No minimum order. No consumer nonsense. Just seals, fast.
+
+Use the Seal Kit Finder if you're not sure on the kit — or hit Cross-Reference with an FPE / Hallite number and we'll show you the Duraforge equivalent (usually 25–30% cheaper).`,
+      ctaLabel: "Open Seal Kit Finder",
+      ctaHref: "/finder",
+    },
+  ];
+
+  for (const c of campaigns) {
+    await prisma.campaign.upsert({
+      where: { slug: c.slug },
+      create: { ...c, isActive: true },
+      update: {
+        title: c.title,
+        subtitle: c.subtitle,
+        body: c.body,
+        ctaLabel: c.ctaLabel,
+        ctaHref: c.ctaHref,
+        isActive: true,
+      },
+    });
+  }
+  console.log(`Seeded ${campaigns.length} campaigns.`);
+}
+
 async function main() {
   await seedProducts();
   await seedAdmin();
+  await seedCampaigns();
   await backfillOrderStatusEvents();
 }
 

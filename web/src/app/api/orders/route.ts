@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { createOrder, getOrdersForUser } from "@/lib/store";
-import { getProduct } from "@/lib/products";
-import type { OrderLineItem, PaymentMethod } from "@/lib/types";
-
-const VAT_RATE = 0.2;
+import { priceBasket } from "@/lib/order-pricing";
+import { getStripe } from "@/lib/stripe";
+import type { PaymentMethod } from "@/lib/types";
 
 export async function POST(request: Request) {
   try {
@@ -17,56 +16,54 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { items, paymentMethod, notes } = body as {
+    const { items, paymentMethod, notes, paymentIntentId } = body as {
       items?: { sku: string; quantity: number }[];
       paymentMethod?: PaymentMethod;
       notes?: string;
+      paymentIntentId?: string;
     };
 
-    if (!items?.length) {
+    const priced = priceBasket(items);
+    if (!priced) {
       return NextResponse.json({ error: "Your basket is empty." }, { status: 400 });
     }
 
     const method: PaymentMethod = paymentMethod === "bacs" ? "bacs" : "card";
 
-    const lineItems: OrderLineItem[] = [];
-    for (const item of items) {
-      const product = getProduct(item.sku);
-      if (!product) {
+    // When Stripe is live and this is a card payment, verify the PaymentIntent
+    // actually succeeded and matches the server-computed total before we
+    // record the order. BACS orders are held until payment clears (no charge).
+    const stripe = getStripe();
+    if (stripe && method === "card") {
+      if (!paymentIntentId) {
         return NextResponse.json(
-          { error: `Product not found: ${item.sku}` },
+          { error: "Missing payment confirmation." },
           { status: 400 },
         );
       }
-      if (item.quantity < 1) continue;
-      lineItems.push({
-        sku: product.sku,
-        name: product.name,
-        quantity: item.quantity,
-        unitPriceExVat: product.price,
-      });
+      const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (intent.status !== "succeeded") {
+        return NextResponse.json(
+          { error: "Payment not completed." },
+          { status: 402 },
+        );
+      }
+      if (intent.amount !== Math.round(priced.totalIncVat * 100)) {
+        return NextResponse.json(
+          { error: "Payment amount mismatch." },
+          { status: 400 },
+        );
+      }
     }
-
-    if (lineItems.length === 0) {
-      return NextResponse.json({ error: "Your basket is empty." }, { status: 400 });
-    }
-
-    const subtotalExVat =
-      Math.round(
-        lineItems.reduce((sum, li) => sum + li.unitPriceExVat * li.quantity, 0) *
-          100,
-      ) / 100;
-    const vatAmount = Math.round(subtotalExVat * VAT_RATE * 100) / 100;
-    const totalIncVat = Math.round((subtotalExVat + vatAmount) * 100) / 100;
 
     const order = await createOrder({
       userId: user.id,
       companyName: user.companyName,
       email: user.email,
-      lineItems,
-      subtotalExVat,
-      vatAmount,
-      totalIncVat,
+      lineItems: priced.lineItems,
+      subtotalExVat: priced.subtotalExVat,
+      vatAmount: priced.vatAmount,
+      totalIncVat: priced.totalIncVat,
       paymentMethod: method,
       shippingAddress: user.deliveryAddress,
       notes,

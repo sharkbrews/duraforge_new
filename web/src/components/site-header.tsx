@@ -55,6 +55,15 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {user && user.role !== "admin" && user.duraCoinsBalance > 0 && (
+            <Link
+              href="/account"
+              className="hidden rounded-full bg-orange/20 px-3 py-1.5 text-xs font-bold text-orange hover:bg-orange/30 sm:block"
+              title="DuraCoins balance"
+            >
+              🪙 {user.duraCoinsBalance.toLocaleString()}
+            </Link>
+          )}
           {user?.role === "admin" && (
             <Link
               href="/admin"

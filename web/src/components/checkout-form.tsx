@@ -6,9 +6,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { getProduct } from "@/lib/products";
 import { gbp } from "@/lib/format";
+import { getStripePublishableKey } from "@/lib/stripe-client";
+import { StripePayment } from "@/components/stripe-payment";
 import type { PaymentMethod, PublicUser } from "@/lib/types";
 
 const VAT_RATE = 0.2;
+const stripeConfigured = Boolean(getStripePublishableKey());
 
 export function CheckoutForm() {
   const router = useRouter();
@@ -19,6 +22,10 @@ export function CheckoutForm() {
   const [error, setError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const [notes, setNotes] = useState("");
+
+  // Stripe card flow state
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [preparingPayment, setPreparingPayment] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -61,43 +68,86 @@ export function CheckoutForm() {
     }
   }, [loading, lines.length, router]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function placeOrder(paymentIntentId?: string) {
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items, paymentMethod, notes, paymentIntentId }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "Checkout failed.");
+      setSubmitting(false);
+      return;
+    }
+    clearCart();
+    router.push(
+      `/checkout/confirmation?order=${encodeURIComponent(data.order.orderNumber)}`,
+    );
+  }
+
+  // BACS, or card when Stripe isn't configured (mock path) → place directly.
+  async function handleSimpleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSubmitting(true);
-
     try {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items,
-          paymentMethod,
-          notes,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Checkout failed.");
-        setSubmitting(false);
-        return;
-      }
-      clearCart();
-      router.push(`/checkout/confirmation?order=${encodeURIComponent(data.order.orderNumber)}`);
+      await placeOrder();
     } catch {
       setError("Something went wrong. Please try again.");
       setSubmitting(false);
     }
   }
 
-  if (loading || !user) {
-    return (
-      <p className="text-center text-slate-brand">Loading checkout…</p>
-    );
+  // Card with Stripe live → create a PaymentIntent, then reveal the card form.
+  async function startCardPayment() {
+    setError("");
+    setPreparingPayment(true);
+    try {
+      const res = await fetch("/api/checkout/payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Could not start payment.");
+        setPreparingPayment(false);
+        return;
+      }
+      if (data.mock) {
+        // Stripe not configured on the server — fall back to mock placement.
+        setSubmitting(true);
+        await placeOrder();
+        return;
+      }
+      setClientSecret(data.clientSecret);
+    } catch {
+      setError("Could not start payment.");
+    } finally {
+      setPreparingPayment(false);
+    }
   }
 
+  async function handleStripePaid(paymentIntentId: string) {
+    setSubmitting(true);
+    setError("");
+    try {
+      await placeOrder(paymentIntentId);
+    } catch {
+      setError("Payment succeeded but the order failed to save. Contact us with your reference.");
+      setSubmitting(false);
+    }
+  }
+
+  if (loading || !user) {
+    return <p className="text-center text-slate-brand">Loading checkout…</p>;
+  }
+
+  const useStripeCard = stripeConfigured && paymentMethod === "card";
+
   return (
-    <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-[1fr_320px]">
+    <form onSubmit={handleSimpleSubmit} className="grid gap-8 lg:grid-cols-[1fr_320px]">
       <div className="space-y-6">
         <section className="rounded-2xl border border-slate-200 bg-white p-6">
           <h2 className="font-display text-lg font-bold text-navy">Delivery details</h2>
@@ -120,21 +170,28 @@ export function CheckoutForm() {
 
         <section className="rounded-2xl border border-slate-200 bg-white p-6">
           <h2 className="font-display text-lg font-bold text-navy">Payment</h2>
-          <p className="mt-1 text-xs text-slate-brand">
-            Mock checkout for now — no real card charge. Stripe goes live in Stage 4.
-          </p>
+          {!stripeConfigured && (
+            <p className="mt-1 text-xs text-slate-brand">
+              Test mode — no real card charge until Stripe keys are live.
+            </p>
+          )}
           <div className="mt-4 space-y-3">
             <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-4 has-[:checked]:border-orange has-[:checked]:bg-orange/5">
               <input
                 type="radio"
                 name="payment"
                 checked={paymentMethod === "card"}
-                onChange={() => setPaymentMethod("card")}
+                onChange={() => {
+                  setPaymentMethod("card");
+                  setClientSecret(null);
+                }}
                 className="mt-1 accent-orange"
               />
               <div>
                 <p className="font-semibold text-navy">Card / Google Pay / Apple Pay</p>
-                <p className="text-xs text-slate-brand">Instant confirmation (simulated)</p>
+                <p className="text-xs text-slate-brand">
+                  {stripeConfigured ? "Secured by Stripe" : "Instant confirmation (simulated)"}
+                </p>
               </div>
             </label>
             <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-4 has-[:checked]:border-orange has-[:checked]:bg-orange/5">
@@ -142,7 +199,10 @@ export function CheckoutForm() {
                 type="radio"
                 name="payment"
                 checked={paymentMethod === "bacs"}
-                onChange={() => setPaymentMethod("bacs")}
+                onChange={() => {
+                  setPaymentMethod("bacs");
+                  setClientSecret(null);
+                }}
                 className="mt-1 accent-orange"
               />
               <div>
@@ -153,6 +213,17 @@ export function CheckoutForm() {
               </div>
             </label>
           </div>
+
+          {useStripeCard && clientSecret && (
+            <div className="mt-5 border-t border-slate-100 pt-5">
+              <StripePayment
+                clientSecret={clientSecret}
+                submitting={submitting}
+                onPaid={handleStripePaid}
+                onError={setError}
+              />
+            </div>
+          )}
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -202,13 +273,31 @@ export function CheckoutForm() {
             <dd>{gbp(total)}</dd>
           </div>
         </dl>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="mt-5 w-full rounded-lg bg-orange py-3 font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
-        >
-          {submitting ? "Placing order…" : "Place order"}
-        </button>
+
+        {useStripeCard ? (
+          !clientSecret && (
+            <button
+              type="button"
+              onClick={startCardPayment}
+              disabled={preparingPayment}
+              className="mt-5 w-full rounded-lg bg-orange py-3 font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+            >
+              {preparingPayment ? "Preparing…" : "Continue to payment"}
+            </button>
+          )
+        ) : (
+          <button
+            type="submit"
+            disabled={submitting}
+            className="mt-5 w-full rounded-lg bg-orange py-3 font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+          >
+            {submitting
+              ? "Placing order…"
+              : paymentMethod === "bacs"
+                ? "Place order (BACS)"
+                : "Place order"}
+          </button>
+        )}
       </aside>
     </form>
   );

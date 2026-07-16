@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getOrderByNumber } from "@/lib/store";
-import { getSessionUserId } from "@/lib/auth";
+import { getOrderByNumber, getLoyaltySummary } from "@/lib/store";
+import { getSessionUser, getSessionUserId } from "@/lib/auth";
 import { gbp } from "@/lib/format";
+import { coinsForOrder, SPIN_ORDER_THRESHOLD } from "@/lib/loyalty";
+import { SpinWheelPrompt } from "@/components/spin-wheel-prompt";
 import { notFound, redirect } from "next/navigation";
 
 export const metadata: Metadata = {
@@ -20,8 +22,17 @@ export default async function ConfirmationPage({
   const userId = await getSessionUserId();
   if (!userId) redirect("/account/login");
 
-  const order = await getOrderByNumber(orderNumber);
+  const [order, loyalty, user] = await Promise.all([
+    getOrderByNumber(orderNumber),
+    getLoyaltySummary(userId),
+    getSessionUser(),
+  ]);
   if (!order || order.userId !== userId) notFound();
+
+  const coinsEarned = coinsForOrder(order.totalIncVat);
+  const showSpin =
+    loyalty.canSpin &&
+    (order.totalIncVat >= SPIN_ORDER_THRESHOLD || loyalty.canSpin);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
@@ -40,18 +51,28 @@ export default async function ConfirmationPage({
             <> · BACS reference will be emailed shortly</>
           )}
         </p>
+
+        {coinsEarned > 0 && (
+          <p className="mt-4 rounded-lg bg-orange/10 px-4 py-3 text-sm font-semibold text-orange">
+            +{coinsEarned} DuraCoins earned
+            {user?.isProMember && " · PRO member 10% discount active on future orders"}
+          </p>
+        )}
+
+        <SpinWheelPrompt canSpin={loyalty.canSpin} showPrompt={showSpin} />
+
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
-            href="/account/orders"
+            href="/account"
             className="rounded-lg bg-orange px-6 py-3 font-semibold text-white hover:bg-orange-600"
           >
-            View order history
+            View DuraCoins &amp; badges
           </Link>
           <Link
-            href="/shop"
+            href="/account/orders"
             className="rounded-lg border border-slate-300 px-6 py-3 font-semibold text-navy hover:border-orange"
           >
-            Keep shopping
+            Order history
           </Link>
         </div>
       </div>

@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
-import { getOrdersForUser } from "@/lib/store";
+import { getLoyaltySummary, getOrdersForUser } from "@/lib/store";
 import { LogoutButton } from "@/components/logout-button";
+import { DuraCoinWidget } from "@/components/duracoin-widget";
+import { BadgeGrid } from "@/components/badge-grid";
+import { SpinWheelPrompt } from "@/components/spin-wheel-prompt";
 import { gbp } from "@/lib/format";
 
 export const metadata: Metadata = {
@@ -22,7 +25,10 @@ export default async function AccountPage() {
   const user = await getSessionUser();
   if (!user) redirect("/account/login");
 
-  const orders = await getOrdersForUser(user.id);
+  const [orders, loyalty] = await Promise.all([
+    getOrdersForUser(user.id),
+    getLoyaltySummary(user.id),
+  ]);
   const lastOrder = orders[0];
 
   return (
@@ -37,7 +43,9 @@ export default async function AccountPage() {
         <LogoutButton />
       </div>
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2">
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <DuraCoinWidget loyalty={loyalty} />
+
         <section className="rounded-2xl border border-slate-200 bg-white p-6">
           <h2 className="font-display font-bold text-navy">Last order</h2>
           {lastOrder ? (
@@ -50,27 +58,35 @@ export default async function AccountPage() {
               </p>
               <p className="mt-2 text-sm font-semibold">{gbp(lastOrder.totalIncVat)} inc-VAT</p>
               <Link
-                href="/account/orders"
+                href={`/account/orders/${encodeURIComponent(lastOrder.orderNumber)}`}
                 className="mt-4 inline-block text-sm font-semibold text-orange hover:underline"
               >
-                View all orders →
+                Track this order →
               </Link>
             </>
           ) : (
             <p className="mt-2 text-sm text-slate-brand">No orders yet. Time to fix that.</p>
           )}
         </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-6">
-          <h2 className="font-display font-bold text-navy">Delivery address</h2>
-          <address className="mt-2 not-italic text-sm text-slate-brand">
-            {user.deliveryAddress.line1}
-            <br />
-            {user.deliveryAddress.city}, {user.deliveryAddress.postcode}
-          </address>
-          <p className="mt-2 text-xs text-slate-brand">{user.email} · {user.phone}</p>
-        </section>
       </div>
+
+      <div className="mt-6">
+        <SpinWheelPrompt canSpin={loyalty.canSpin} showPrompt={loyalty.canSpin} />
+      </div>
+
+      <div className="mt-8">
+        <BadgeGrid earned={loyalty.badges} />
+      </div>
+
+      <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
+        <h2 className="font-display font-bold text-navy">Delivery address</h2>
+        <address className="mt-2 not-italic text-sm text-slate-brand">
+          {user.deliveryAddress.line1}
+          <br />
+          {user.deliveryAddress.city}, {user.deliveryAddress.postcode}
+        </address>
+        <p className="mt-2 text-xs text-slate-brand">{user.email} · {user.phone}</p>
+      </section>
 
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
@@ -84,6 +100,12 @@ export default async function AccountPage() {
           className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-navy hover:border-orange"
         >
           Seal Kit Finder
+        </Link>
+        <Link
+          href="/campaigns"
+          className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-navy hover:border-orange"
+        >
+          Current offers
         </Link>
       </div>
     </div>

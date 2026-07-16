@@ -25,6 +25,13 @@ export default async function AdminOrderDetailPage({
       <p className="text-sm text-slate-brand">
         {order.companyName} · {order.email}
       </p>
+      <Link
+        href={`/account/orders/${encodeURIComponent(order.orderNumber)}/invoice`}
+        className="mt-1 inline-block text-sm font-semibold text-orange hover:underline"
+        target="_blank"
+      >
+        View VAT invoice →
+      </Link>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <AdminOrderActions
