@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { updateEnquiryStatus } from "@/lib/store";
 import type { EnquiryStatus } from "@/lib/types";
+import { logAudit } from "@/lib/audit";
+import { getClientIp } from "@/lib/ip-allowlist";
 
 const VALID: EnquiryStatus[] = ["new", "read", "replied", "archived"];
 
@@ -10,7 +12,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "admin") {
+  if (!session?.user?.id || session.user.role !== "admin" || !session.user.adminAuthed) {
     return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   }
 
@@ -27,6 +29,14 @@ export async function PATCH(
     if (!enquiry) {
       return NextResponse.json({ error: "Enquiry not found." }, { status: 404 });
     }
+
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "enquiry.status.updated",
+      detail: `${enquiry.email} → ${status}`,
+      ip: getClientIp(request.headers),
+    });
 
     return NextResponse.json({ enquiry });
   } catch {

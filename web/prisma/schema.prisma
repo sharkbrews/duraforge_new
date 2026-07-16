@@ -21,6 +21,11 @@ model User {
   phone        String
   role         Role     @default(CUSTOMER)
 
+  // Admin security (Stage 3.5)
+  mfaSecret          String?
+  mfaEnabled         Boolean @default(false)
+  mustChangePassword Boolean @default(false)
+
   // Delivery address
   addressLine1 String
   addressLine2 String?
@@ -211,4 +216,18 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+/// Admin action audit trail (Stage 3.5). Records who did what, when, from where.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String?
+  action     String
+  detail     String?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
 }

@@ -3,13 +3,15 @@ import { auth } from "@/auth";
 import { updateOrderStatus } from "@/lib/store";
 import type { PickPackStatus } from "@/lib/types";
 import { PICK_PACK_STAGES } from "@/lib/order-status";
+import { logAudit } from "@/lib/audit";
+import { getClientIp } from "@/lib/ip-allowlist";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ orderNumber: string }> },
 ) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "admin") {
+  if (!session?.user?.id || session.user.role !== "admin" || !session.user.adminAuthed) {
     return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   }
 
@@ -45,6 +47,16 @@ export async function PATCH(
     if (!order) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
+
+    await logAudit({
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      action: "order.status.updated",
+      detail: `${order.orderNumber} → ${status}${
+        trackingNumber ? ` (tracking ${trackingNumber})` : ""
+      }`,
+      ip: getClientIp(request.headers),
+    });
 
     return NextResponse.json({ order });
   } catch {

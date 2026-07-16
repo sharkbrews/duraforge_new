@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "../src/lib/password";
 import { products } from "../src/lib/products";
@@ -54,7 +55,13 @@ async function seedProducts() {
 }
 
 async function seedAdmin() {
-  const email = "admin@duraforge.co.uk";
+  const email = process.env.ADMIN_EMAIL ?? "admin@duraforge.co.uk";
+
+  // Use an env-provided initial password, or generate a random one printed once.
+  // Either way the admin is forced to change it (and enrol MFA) on first login.
+  const provided = process.env.ADMIN_INITIAL_PASSWORD?.trim();
+  const initialPassword = provided || randomBytes(12).toString("base64url");
+
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     if (existing.role !== "ADMIN") {
@@ -62,9 +69,9 @@ async function seedAdmin() {
         where: { email },
         data: { role: "ADMIN" },
       });
-      console.log("Promoted existing admin user to ADMIN role.");
+      console.log(`Promoted ${email} to ADMIN role.`);
     } else {
-      console.log("Admin user already exists.");
+      console.log(`Admin user ${email} already exists — left untouched.`);
     }
     return;
   }
@@ -72,7 +79,8 @@ async function seedAdmin() {
   await prisma.user.create({
     data: {
       email,
-      passwordHash: hashPassword("DuraAdmin2026!"),
+      passwordHash: hashPassword(initialPassword),
+      mustChangePassword: true,
       companyName: "Duraforge UK Ltd",
       phone: "01474555555",
       role: "ADMIN",
@@ -81,7 +89,16 @@ async function seedAdmin() {
       postcode: "DA10 1BZ",
     },
   });
-  console.log("Created admin user: admin@duraforge.co.uk");
+
+  console.log(`Created admin user: ${email}`);
+  if (provided) {
+    console.log("Initial password: (from ADMIN_INITIAL_PASSWORD env var)");
+  } else {
+    console.log("─────────────────────────────────────────────");
+    console.log(`  Initial admin password: ${initialPassword}`);
+    console.log("  Change it on first login. This is shown only once.");
+    console.log("─────────────────────────────────────────────");
+  }
 }
 
 async function backfillOrderStatusEvents() {

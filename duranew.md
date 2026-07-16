@@ -13,7 +13,7 @@
 **Repo:** https://github.com/sharkbrews/duraforge_new  (branch: `main`)
 **Local folder:** /Users/tushar/Documents/duraforge
 **Created:** 2026-07-16
-**Last updated:** 2026-07-16 (Stage 3 committed + pushed)
+**Last updated:** 2026-07-16 (Stage 3.5 admin security BUILT by Opus — awaiting approval to commit)
 
 ---
 
@@ -159,6 +159,8 @@ get layered in once the shape is approved.
   confirmation. (Real DB + auth wired here.)
 - **Stage 3 — Order tracking + Admin:** Pick-Pack-Ship 5-stage tracker, staff admin panel
   (orders, products, cost columns visible to admin only), enquiry inbox.
+- **Stage 3.5 — Admin security (Opus):** Harden admin login + access control before go-live
+  (MFA, IP allowlist, audit log, separate admin login). **Required before Stage 4 deploy.**
 - **Stage 4 — Loyalty + Marketing:** DuraCoins, badges, spin-the-wheel, campaign pages,
   email hooks. Then real Stripe + real database hardening.
 
@@ -235,8 +237,6 @@ Legend: [ ] todo · [~] in progress · [x] done · [!] blocked/needs Tushar
 5. Complete mock payment → see confirmation with order number (e.g. `DRG-ORD-2026-0001`)
 6. Check **Account → Orders** for order history
 
-*(Stage 4 tasks will be expanded when we reach them.)*
-
 ### Stage 3 — Order Tracking + Admin
 - [x] Prisma extended: `Product`, `Enquiry`, `OrderStatusEvent`, order tracking fields
       (`carrier`, `trackingNumber`, `statusUpdatedAt`)
@@ -264,6 +264,37 @@ Legend: [ ] todo · [~] in progress · [x] done · [!] blocked/needs Tushar
 
 **Run seed on a fresh machine:** `cd web && npm run db:seed` (after migrate)
 
+### Stage 3.5 — Admin Security (Opus) ✅ **DONE (awaiting Tushar's approval to commit)**
+> **Who:** Opus (security / auth hardening). Built 2026-07-16.
+
+**What was shipped:**
+- [x] **Separate admin sign-in** — `/admin/login` (own page/layout, not the customer login). Customer login can never grant admin-panel access.
+- [x] **MFA for admin accounts** — TOTP (authenticator app), enforced on admin role only. Enrol at `/admin/security`; a 6-digit code is required at every admin sign-in once enabled.
+- [x] **IP allowlist** — `ADMIN_IP_ALLOWLIST` env (comma-separated) gates `/admin` + `/api/admin`. Empty = allow all (dev); loopback always allowed. Blocked IP → 403.
+- [x] **Audit log** — `AuditLog` Prisma model + writes on: admin login success/failure/denied, logout, MFA enable, password change, order status changes, enquiry status changes. Viewable at `/admin/audit`.
+- [x] **Admin session hardening** — admin sessions expire after 12h (`ADMIN_SESSION_MAX_AGE_MS`), independent of the 30-day customer session; expiry bounces to `/admin/login?expired=1`.
+- [x] **Remove dev credentials from docs/seed** — seed now uses `ADMIN_INITIAL_PASSWORD` env or a random once-printed password, and sets `mustChangePassword=true`. First login forces password change **and** MFA enrolment before the panel unlocks.
+- [x] Build + smoke-tested: unauth → redirect/401; admin login (no MFA) → forced to `/admin/security`; panel API 403 until setup done; MFA enrol+verify with generated TOTP → 200; audit rows written; IP allowlist unit-verified.
+
+**How it works (architecture):**
+- `web/src/auth.config.ts` — edge-safe base config (used by middleware to decode JWT).
+- `web/src/auth.ts` — Node config: Credentials provider with `scope:"admin"` + `totp`; logs auth events.
+- `web/src/middleware.ts` — IP allowlist + admin auth/MFA/password enforcement (redirects for pages, JSON 401/403 for APIs).
+- Route groups: `/admin/(panel)/*` (full guard) vs `/admin/security` (setup guard) vs `/admin/login` (open to allowed IPs).
+- Libs: `lib/mfa.ts` (otpauth), `lib/ip-allowlist.ts`, `lib/audit.ts`, `lib/admin-auth.ts`.
+
+**New env vars** (see `web/.env.example`): `ADMIN_IP_ALLOWLIST`, `ADMIN_EMAIL`, `ADMIN_INITIAL_PASSWORD`.
+
+**How to test locally:**
+1. Go to `/admin/login`, sign in as `admin@duraforge.co.uk` (existing dev password) — leave the code blank on first sign-in.
+2. You'll be sent to `/admin/security`: change the password + scan the QR with an authenticator app, enter the 6-digit code → Finish.
+3. Sign out, sign back in at `/admin/login` — now the authenticator code is required.
+4. Update an order status → check `/admin/audit` shows the entry.
+> Note: MFA on the dev admin was reset to un-enrolled after testing so you can enrol with your own app.
+
+**Blockers:** Stage 4 deploy to Vercel + real Stripe can proceed once this is approved + pushed.
+
+*(Stage 4 tasks will be expanded when we reach them.)*
 
 ---
 
@@ -278,9 +309,21 @@ _(empty)_
 
 ## 9. SESSION LOG (newest first)
 
+- **2026-07-16 (Opus) — Stage 3.5 admin security BUILT:** Separate `/admin/login`, TOTP MFA
+  (otpauth + QR), `ADMIN_IP_ALLOWLIST` gate in `middleware.ts`, `AuditLog` model + `/admin/audit`,
+  12h admin session expiry, and forced first-login password change + MFA enrolment. Split auth into
+  edge `auth.config.ts` + node `auth.ts`; restructured admin routes into `(panel)` (full guard) and
+  `/admin/security` (setup guard). Migration `stage35_admin_security` applied. Build clean;
+  smoke-tested end-to-end over HTTP (login → setup gate 403 → MFA enrol/verify → audit rows). Dev
+  admin MFA reset to un-enrolled so Tushar can enrol with his own app. AWAITING approval to commit +
+  push. NEXT UP: Stage 4 (deploy + real Stripe).
+- **2026-07-16 (Composer) — Stage 3.5 task list added:** Documented admin security gap after
+  Tushar review. Stage 3 has basic role checks only; Opus must add MFA, IP allowlist, audit log,
+  separate admin login before go-live. NEXT UP: **Stage 3.5 with Opus** — say *"read duranew.md
+  and continue with Stage 3.5"*. Stage 4 deploy should wait until 3.5 is done.
 - **2026-07-16 (Composer) — Stage 3 committed + pushed:** Commit `ac043fd` on `main`.
-  Order tracking, admin panel, contact/enquiry inbox live. NEXT UP: Stage 4 (DuraCoins,
-  campaigns, real Stripe, deploy to Vercel).
+  Order tracking, admin panel, contact/enquiry inbox live. NEXT UP: Stage 3.5 (admin security,
+  Opus) then Stage 4.
 - **2026-07-16 (Composer) — Stage 3 built:** Order tracking + admin panel complete. Extended
   Prisma schema (Product with admin-only cost columns, Enquiry, OrderStatusEvent, carrier/tracking
   on orders). Seeded 24 products + admin user (`admin@duraforge.co.uk`). Customer 5-stage

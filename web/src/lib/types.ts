@@ -16,6 +16,8 @@ export interface User {
   vatNumber?: string;
   phone: string;
   role: UserRole;
+  mfaEnabled: boolean;
+  mustChangePassword: boolean;
   deliveryAddress: Address;
   createdAt: string;
 }

@@ -35,6 +35,8 @@ function mapUser(row: DbUser): User {
     vatNumber: row.vatNumber ?? undefined,
     phone: row.phone,
     role: row.role === "ADMIN" ? "admin" : "customer",
+    mfaEnabled: row.mfaEnabled,
+    mustChangePassword: row.mustChangePassword,
     deliveryAddress: {
       line1: row.addressLine1,
       line2: row.addressLine2 ?? undefined,
@@ -109,6 +111,41 @@ export async function getUserByEmail(email: string): Promise<User | undefined> {
 export async function getUserById(id: string): Promise<User | undefined> {
   const row = await prisma.user.findUnique({ where: { id } });
   return row ? mapUser(row) : undefined;
+}
+
+// --- Admin security (Stage 3.5) ---
+
+/** Fetch the raw TOTP secret for verification. Never expose to the client. */
+export async function getUserMfaSecret(id: string): Promise<string | null> {
+  const row = await prisma.user.findUnique({
+    where: { id },
+    select: { mfaSecret: true },
+  });
+  return row?.mfaSecret ?? null;
+}
+
+export async function setUserMfaSecret(id: string, secret: string): Promise<void> {
+  await prisma.user.update({
+    where: { id },
+    data: { mfaSecret: secret, mfaEnabled: false },
+  });
+}
+
+export async function enableUserMfa(id: string): Promise<void> {
+  await prisma.user.update({
+    where: { id },
+    data: { mfaEnabled: true },
+  });
+}
+
+export async function setUserPassword(
+  id: string,
+  passwordHash: string,
+): Promise<void> {
+  await prisma.user.update({
+    where: { id },
+    data: { passwordHash, mustChangePassword: false },
+  });
 }
 
 export interface CreateUserInput {
