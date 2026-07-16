@@ -1,5 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useCart } from "@/lib/cart-context";
+import type { PublicUser } from "@/lib/types";
 
 const navLinks = [
   { label: "Seal Kit Finder", href: "/finder" },
@@ -10,6 +15,16 @@ const navLinks = [
 ];
 
 export function SiteHeader() {
+  const { itemCount } = useCart();
+  const [user, setUser] = useState<PublicUser | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data: { user: PublicUser | null }) => setUser(data.user))
+      .catch(() => setUser(null));
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 bg-navy text-white shadow-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
@@ -42,13 +57,13 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           <Link
             href="/account"
-            className="hidden rounded-md px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:text-white sm:block"
+            className="hidden max-w-[140px] truncate rounded-md px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:text-white sm:block"
           >
-            Sign in
+            {user ? user.companyName : "Sign in"}
           </Link>
           <Link
             href="/basket"
-            className="flex items-center gap-2 rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            className="relative flex items-center gap-2 rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -65,6 +80,11 @@ export function SiteHeader() {
               <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
             </svg>
             <span className="hidden sm:inline">Basket</span>
+            {itemCount > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-navy">
+                {itemCount}
+              </span>
+            )}
           </Link>
         </div>
       </div>

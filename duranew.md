@@ -13,7 +13,7 @@
 **Repo:** https://github.com/sharkbrews/duraforge_new  (branch: `main`)
 **Local folder:** /Users/tushar/Documents/duraforge
 **Created:** 2026-07-16
-**Last updated:** 2026-07-16
+**Last updated:** 2026-07-16 (Stage 2 complete — awaiting approval)
 
 ---
 
@@ -177,12 +177,42 @@ Legend: [ ] todo · [~] in progress · [x] done · [!] blocked/needs Tushar
 - [x] Build Homepage: hero, Kit Finder widget (working dropdowns), trust bar, featured
       categories, cross-reference strip, local-pride cards
 - [x] Build passes (`npm run build` clean); dev server verified (HTTP 200)
-- [ ] Tushar reviews in browser + approves
-- [ ] On approval: commit + push Stage 0
+- [x] Committed + pushed Stage 0 (3815f46)
 
 **How to view:** dev server runs at **http://localhost:3001** (`cd web && npm run dev`).
 
-*(Later stages will be expanded into detailed tasks when we reach them.)*
+### Stage 1 — Catalogue + Finder
+- [x] Load 24 real seal kits into `web/src/lib/products.ts` (sale price only — no cost columns)
+- [x] Shop listing with filters + sort (`/shop`, `/shop/[brand]`)
+- [x] Product detail page with tabs (`/product/[sku]`)
+- [x] Seal Kit Finder (`/finder`) and cross-reference lookup (`/cross-reference`)
+- [x] Build clean (38 static pages); live-tested on :3001
+- [x] Committed + pushed Stage 1 (a5156b6)
+
+### Stage 2 — Accounts + Basket + Checkout
+- [x] Types + file-based JSON store (`web/src/lib/types.ts`, `store.ts`) in `web/data/`
+- [x] Auth helpers: scrypt password hashing + signed session cookies (`auth.ts`)
+- [x] Cart context + localStorage persistence + basket page (`/basket`)
+- [x] Header cart badge + company name when logged in
+- [x] Register/login/logout/me API routes + account pages (`/account`, `/account/login`,
+      `/account/register`, `/account/orders`)
+- [x] Add to basket wired on product detail pages
+- [x] Mock checkout (`/checkout`) + order confirmation (`/checkout/confirmation`)
+- [x] Orders API (create + list for signed-in user)
+- [x] `web/data/users.json` + `orders.json` added to `.gitignore` (runtime data, not committed)
+- [x] Build clean (50 routes); API smoke-test passed (register → login → order → DRG-ORD-2026-0001)
+- [x] Tushar reviewed + approved
+- [ ] On approval: commit + push Stage 2
+
+**How to test Stage 2:**
+1. Open **http://localhost:3001**
+2. Go to **Account → Register** (or `/account/register`) — create a trade account
+3. Browse **Shop**, open any kit, click **Add to basket**
+4. Open **Basket** (header icon), proceed to **Checkout**
+5. Complete mock payment → see confirmation with order number (e.g. `DRG-ORD-2026-0001`)
+6. Check **Account → Orders** for order history
+
+*(Stage 3 tasks will be expanded when we reach them.)*
 
 ---
 
@@ -197,6 +227,22 @@ _(empty)_
 
 ## 9. SESSION LOG (newest first)
 
+- **2026-07-16 (Composer) — Stage 2 built:** Accounts, basket, and mock checkout complete.
+  Added file-based JSON storage (`web/data/` — gitignored at runtime), auth (scrypt + session
+  cookies), cart context (localStorage), register/login/logout/me API routes, account pages,
+  basket page, checkout with mock card/BACS payment, order confirmation, and orders API.
+  Header now shows cart count + company name when signed in. Add to basket wired on product
+  pages. Build clean (50 routes). Smoke-tested: register → add order → `DRG-ORD-2026-0001`.
+  AWAITING Tushar approval to commit + push Stage 2. Dev server on :3001 (must run outside
+  sandbox). NEXT UP: Stage 3 (order tracking + admin panel).
+- **2026-07-16 (Claude/Opus) — Stage 1 committed + pushed:** Stage 1 committed (a5156b6) and
+  pushed to GitHub `main`. Both Stage 0 and Stage 1 are now safely on the remote. NEXT UP:
+  Stage 2 (accounts + basket + checkout) — Tushar plans to switch to **Composer** for the bulk
+  of implementation and reserve Opus for the DB/auth foundation, Stripe/payments, and hard
+  debugging. Any model continuing: read this file, then start Stage 2 (see plan in section 6 +
+  expand the LIVE TASK LIST). Reminder: dev server runs OUTSIDE the sandbox on :3001.
+  PUSH NOTE: pushes need the sharkbrews fine-grained token via the inline credential-helper
+  method (origin defaults to a different GitHub account otherwise).
 - **2026-07-16 (Claude/Opus) — Stage 0 pushed + Stage 1 built:** Committed & pushed Stage 0 to
   GitHub (commit 3815f46). Then built Stage 1: real product catalogue in
   `web/src/lib/products.ts` (24 kits across JCB/CAT/Hyva/Kubota/Takeuchi/Hyundai/Bobcat, real

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AddToBasketButton } from "@/components/add-to-basket-button";
 import { Product, savingsPercent } from "@/lib/products";
 import { gbp } from "@/lib/format";
 
@@ -75,10 +76,8 @@ export function ProductDetail({ product }: { product: Product }) {
             )}
           </p>
 
-          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-            <button className="flex-1 rounded-lg bg-orange px-5 py-3 font-semibold text-white transition-colors hover:bg-orange-600">
-              Add to basket
-            </button>
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-start">
+            <AddToBasketButton sku={product.sku} className="flex-1 rounded-lg bg-orange px-5 py-3 font-semibold text-white transition-colors hover:bg-orange-600" />
             <a
               href={`https://wa.me/440000000000?text=Hi%20Duraforge%2C%20I%20need%20the%20${encodeURIComponent(
                 product.sku,

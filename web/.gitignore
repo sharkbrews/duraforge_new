@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local trade data (accounts + orders — do not commit)
+/data/users.json
+/data/orders.json
