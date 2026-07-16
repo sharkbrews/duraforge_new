@@ -3,7 +3,9 @@
 // DATABASE_URL for a hosted provider (Supabase / Neon / Railway).
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Vercel runs on Amazon Linux — include this target so Prisma works in production.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
