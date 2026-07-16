@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -40,6 +41,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local trade data (accounts + orders — do not commit)
-/data/users.json
-/data/orders.json
+# legacy file-based store (replaced by Postgres in Stage 2.5)
+/data

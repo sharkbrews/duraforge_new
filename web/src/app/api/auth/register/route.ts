@@ -1,15 +1,6 @@
 import { NextResponse } from "next/server";
-import {
-  getUserByEmail,
-  getUsers,
-  saveUsers,
-} from "@/lib/store";
-import {
-  hashPassword,
-  newUserId,
-  setSessionCookie,
-  toPublicUser,
-} from "@/lib/auth";
+import { createUser, getUserByEmail } from "@/lib/store";
+import { hashPassword, toPublicUser } from "@/lib/auth";
 import type { Address } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -42,7 +33,10 @@ export async function POST(request: Request) {
       !deliveryAddress?.postcode
     ) {
       return NextResponse.json(
-        { error: "Please fill in all required fields. Password must be at least 8 characters." },
+        {
+          error:
+            "Please fill in all required fields. Password must be at least 8 characters.",
+        },
         { status: 400 },
       );
     }
@@ -55,28 +49,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = {
-      id: newUserId(),
+    const user = await createUser({
       email: normalisedEmail,
       passwordHash: hashPassword(password),
-      companyName: companyName.trim(),
-      vatNumber: vatNumber?.trim() || undefined,
-      phone: phone.trim(),
-      deliveryAddress: {
-        line1: deliveryAddress.line1.trim(),
-        line2: deliveryAddress.line2?.trim(),
-        city: deliveryAddress.city.trim(),
-        county: deliveryAddress.county?.trim(),
-        postcode: deliveryAddress.postcode.trim().toUpperCase(),
-      },
-      createdAt: new Date().toISOString(),
-    };
+      companyName,
+      vatNumber,
+      phone,
+      deliveryAddress,
+    });
 
-    const users = await getUsers();
-    users.push(user);
-    await saveUsers(users);
-    await setSessionCookie(user.id);
-
+    // The client signs in via NextAuth immediately after a successful register.
     return NextResponse.json({ user: toPublicUser(user) });
   } catch {
     return NextResponse.json({ error: "Registration failed." }, { status: 500 });

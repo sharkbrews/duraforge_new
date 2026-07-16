@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSessionUser, newOrderId } from "@/lib/auth";
-import {
-  getOrders,
-  nextOrderNumber,
-  saveOrders,
-} from "@/lib/store";
+import { getSessionUser } from "@/lib/auth";
+import { createOrder, getOrdersForUser } from "@/lib/store";
 import { getProduct } from "@/lib/products";
 import type { OrderLineItem, PaymentMethod } from "@/lib/types";
 
@@ -14,7 +10,10 @@ export async function POST(request: Request) {
   try {
     const user = await getSessionUser();
     if (!user) {
-      return NextResponse.json({ error: "Please sign in to checkout." }, { status: 401 });
+      return NextResponse.json(
+        { error: "Please sign in to checkout." },
+        { status: 401 },
+      );
     }
 
     const body = await request.json();
@@ -52,35 +51,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Your basket is empty." }, { status: 400 });
     }
 
-    const subtotalExVat = lineItems.reduce(
-      (sum, li) => sum + li.unitPriceExVat * li.quantity,
-      0,
-    );
+    const subtotalExVat =
+      Math.round(
+        lineItems.reduce((sum, li) => sum + li.unitPriceExVat * li.quantity, 0) *
+          100,
+      ) / 100;
     const vatAmount = Math.round(subtotalExVat * VAT_RATE * 100) / 100;
     const totalIncVat = Math.round((subtotalExVat + vatAmount) * 100) / 100;
 
-    const orderNumber = await nextOrderNumber();
-    const order = {
-      id: newOrderId(),
-      orderNumber,
+    const order = await createOrder({
       userId: user.id,
       companyName: user.companyName,
       email: user.email,
-      status: "received" as const,
       lineItems,
       subtotalExVat,
       vatAmount,
       totalIncVat,
       paymentMethod: method,
       shippingAddress: user.deliveryAddress,
-      billingAddress: user.deliveryAddress,
-      notes: notes?.trim() || undefined,
-      createdAt: new Date().toISOString(),
-    };
-
-    const orders = await getOrders();
-    orders.push(order);
-    await saveOrders(orders);
+      notes,
+    });
 
     return NextResponse.json({ order });
   } catch {
@@ -94,7 +84,6 @@ export async function GET() {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
-  const { getOrdersForUser } = await import("@/lib/store");
   const orders = await getOrdersForUser(user.id);
   return NextResponse.json({ orders });
 }

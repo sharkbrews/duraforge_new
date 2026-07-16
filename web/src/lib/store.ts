@@ -1,75 +1,205 @@
-import { promises as fs } from "fs";
-import path from "path";
-import type { Order, User } from "./types";
+import { prisma } from "./prisma";
+import type {
+  Address,
+  Order,
+  OrderLineItem,
+  PaymentMethod,
+  PickPackStatus,
+  User,
+  UserRole,
+} from "./types";
+import type {
+  Order as DbOrder,
+  OrderLineItem as DbOrderLineItem,
+  Prisma,
+  User as DbUser,
+} from "@prisma/client";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+// ---------------------------------------------------------------------------
+// Mappers: Prisma rows -> app-facing types (keeps the rest of the app stable).
+// ---------------------------------------------------------------------------
 
-async function readJson<T>(filename: string, fallback: T): Promise<T> {
-  const filePath = path.join(DATA_DIR, filename);
-  try {
-    const raw = await fs.readFile(filePath, "utf-8");
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
+function mapUser(row: DbUser): User {
+  return {
+    id: row.id,
+    email: row.email,
+    passwordHash: row.passwordHash,
+    companyName: row.companyName,
+    vatNumber: row.vatNumber ?? undefined,
+    phone: row.phone,
+    role: row.role === "ADMIN" ? "admin" : "customer",
+    deliveryAddress: {
+      line1: row.addressLine1,
+      line2: row.addressLine2 ?? undefined,
+      city: row.city,
+      county: row.county ?? undefined,
+      postcode: row.postcode,
+    },
+    createdAt: row.createdAt.toISOString(),
+  };
 }
 
-async function writeJson<T>(filename: string, data: T): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  const filePath = path.join(DATA_DIR, filename);
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+function mapOrder(row: DbOrder & { lineItems: DbOrderLineItem[] }): Order {
+  const address: Address = {
+    line1: row.shipLine1,
+    line2: row.shipLine2 ?? undefined,
+    city: row.shipCity,
+    county: row.shipCounty ?? undefined,
+    postcode: row.shipPostcode,
+  };
+  return {
+    id: row.id,
+    orderNumber: row.orderNumber,
+    userId: row.userId,
+    companyName: row.companyName,
+    email: row.email,
+    status: row.status.toLowerCase() as PickPackStatus,
+    lineItems: row.lineItems.map((li) => ({
+      sku: li.sku,
+      name: li.name,
+      quantity: li.quantity,
+      unitPriceExVat: li.unitPriceExVat,
+    })),
+    subtotalExVat: row.subtotalExVat,
+    vatAmount: row.vatAmount,
+    totalIncVat: row.totalIncVat,
+    paymentMethod: row.paymentMethod.toLowerCase() as PaymentMethod,
+    shippingAddress: address,
+    billingAddress: address,
+    notes: row.notes ?? undefined,
+    createdAt: row.createdAt.toISOString(),
+  };
 }
 
-export async function getUsers(): Promise<User[]> {
-  return readJson<User[]>("users.json", []);
-}
-
-export async function saveUsers(users: User[]): Promise<void> {
-  await writeJson("users.json", users);
-}
+// ---------------------------------------------------------------------------
+// Users
+// ---------------------------------------------------------------------------
 
 export async function getUserByEmail(email: string): Promise<User | undefined> {
-  const users = await getUsers();
-  const normalised = email.trim().toLowerCase();
-  return users.find((u) => u.email === normalised);
+  const row = await prisma.user.findUnique({
+    where: { email: email.trim().toLowerCase() },
+  });
+  return row ? mapUser(row) : undefined;
 }
 
 export async function getUserById(id: string): Promise<User | undefined> {
-  const users = await getUsers();
-  return users.find((u) => u.id === id);
+  const row = await prisma.user.findUnique({ where: { id } });
+  return row ? mapUser(row) : undefined;
 }
 
-export async function getOrders(): Promise<Order[]> {
-  return readJson<Order[]>("orders.json", []);
+export interface CreateUserInput {
+  email: string;
+  passwordHash: string;
+  companyName: string;
+  vatNumber?: string;
+  phone: string;
+  role?: UserRole;
+  deliveryAddress: Address;
 }
 
-export async function saveOrders(orders: Order[]): Promise<void> {
-  await writeJson("orders.json", orders);
+export async function createUser(input: CreateUserInput): Promise<User> {
+  const row = await prisma.user.create({
+    data: {
+      email: input.email.trim().toLowerCase(),
+      passwordHash: input.passwordHash,
+      companyName: input.companyName.trim(),
+      vatNumber: input.vatNumber?.trim() || null,
+      phone: input.phone.trim(),
+      role: input.role === "admin" ? "ADMIN" : "CUSTOMER",
+      addressLine1: input.deliveryAddress.line1.trim(),
+      addressLine2: input.deliveryAddress.line2?.trim() || null,
+      city: input.deliveryAddress.city.trim(),
+      county: input.deliveryAddress.county?.trim() || null,
+      postcode: input.deliveryAddress.postcode.trim().toUpperCase(),
+    },
+  });
+  return mapUser(row);
 }
+
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
 
 export async function getOrdersForUser(userId: string): Promise<Order[]> {
-  const orders = await getOrders();
-  return orders
-    .filter((o) => o.userId === userId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const rows = await prisma.order.findMany({
+    where: { userId },
+    include: { lineItems: true },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(mapOrder);
 }
 
 export async function getOrderByNumber(
   orderNumber: string,
 ): Promise<Order | undefined> {
-  const orders = await getOrders();
-  return orders.find((o) => o.orderNumber === orderNumber);
+  const row = await prisma.order.findUnique({
+    where: { orderNumber },
+    include: { lineItems: true },
+  });
+  return row ? mapOrder(row) : undefined;
 }
 
-export async function nextOrderNumber(): Promise<string> {
-  const orders = await getOrders();
+export interface CreateOrderInput {
+  userId: string;
+  companyName: string;
+  email: string;
+  lineItems: OrderLineItem[];
+  subtotalExVat: number;
+  vatAmount: number;
+  totalIncVat: number;
+  paymentMethod: PaymentMethod;
+  shippingAddress: Address;
+  notes?: string;
+}
+
+async function nextOrderNumber(
+  tx: Prisma.TransactionClient,
+): Promise<string> {
   const year = new Date().getFullYear();
   const prefix = `DRG-ORD-${year}-`;
-  const existing = orders
-    .map((o) => o.orderNumber)
-    .filter((n) => n.startsWith(prefix))
-    .map((n) => parseInt(n.replace(prefix, ""), 10))
-    .filter((n) => !Number.isNaN(n));
-  const next = existing.length > 0 ? Math.max(...existing) + 1 : 1;
+  const last = await tx.order.findFirst({
+    where: { orderNumber: { startsWith: prefix } },
+    orderBy: { orderNumber: "desc" },
+    select: { orderNumber: true },
+  });
+  const lastNum = last
+    ? parseInt(last.orderNumber.replace(prefix, ""), 10)
+    : 0;
+  const next = Number.isNaN(lastNum) ? 1 : lastNum + 1;
   return `${prefix}${String(next).padStart(4, "0")}`;
+}
+
+export async function createOrder(input: CreateOrderInput): Promise<Order> {
+  const row = await prisma.$transaction(async (tx) => {
+    const orderNumber = await nextOrderNumber(tx);
+    return tx.order.create({
+      data: {
+        orderNumber,
+        userId: input.userId,
+        companyName: input.companyName,
+        email: input.email,
+        status: "RECEIVED",
+        subtotalExVat: input.subtotalExVat,
+        vatAmount: input.vatAmount,
+        totalIncVat: input.totalIncVat,
+        paymentMethod: input.paymentMethod === "bacs" ? "BACS" : "CARD",
+        shipLine1: input.shippingAddress.line1,
+        shipLine2: input.shippingAddress.line2 || null,
+        shipCity: input.shippingAddress.city,
+        shipCounty: input.shippingAddress.county || null,
+        shipPostcode: input.shippingAddress.postcode,
+        notes: input.notes?.trim() || null,
+        lineItems: {
+          create: input.lineItems.map((li) => ({
+            sku: li.sku,
+            name: li.name,
+            quantity: li.quantity,
+            unitPriceExVat: li.unitPriceExVat,
+          })),
+        },
+      },
+      include: { lineItems: true },
+    });
+  });
+  return mapOrder(row);
 }

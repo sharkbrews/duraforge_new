@@ -6,6 +6,8 @@ export interface Address {
   postcode: string;
 }
 
+export type UserRole = "customer" | "admin";
+
 export interface User {
   id: string;
   email: string;
@@ -13,6 +15,7 @@ export interface User {
   companyName: string;
   vatNumber?: string;
   phone: string;
+  role: UserRole;
   deliveryAddress: Address;
   createdAt: string;
 }

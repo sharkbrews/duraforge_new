@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { useState } from "react";
 
 export function RegisterForm() {
@@ -52,6 +53,17 @@ export function RegisterForm() {
       if (!res.ok) {
         setError(data.error ?? "Registration failed.");
         setLoading(false);
+        return;
+      }
+      // Account created — sign the new user straight in.
+      const signInRes = await signIn("credentials", {
+        email: form.email,
+        password: form.password,
+        redirect: false,
+      });
+      if (!signInRes || signInRes.error) {
+        // Account exists but auto sign-in failed; send them to the login page.
+        router.push("/account/login");
         return;
       }
       router.push("/account");

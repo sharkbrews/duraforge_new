@@ -13,7 +13,7 @@
 **Repo:** https://github.com/sharkbrews/duraforge_new  (branch: `main`)
 **Local folder:** /Users/tushar/Documents/duraforge
 **Created:** 2026-07-16
-**Last updated:** 2026-07-16 (Stage 2 complete — awaiting approval)
+**Last updated:** 2026-07-16 (Stage 2.5 — DB + auth built, awaiting commit approval)
 
 ---
 
@@ -134,9 +134,10 @@ Full, proper stack — but built in visible stages, sample data first, real serv
 
 - **Framework:** Next.js (App Router) + TypeScript — great for SEO (matters for a shop)
 - **Styling:** Tailwind CSS + shadcn/ui components
-- **Data:** Start with local sample data (TypeScript files / JSON) generated from the real
-  price lists in `docs/`. Later: PostgreSQL + Prisma.
-- **Auth:** NextAuth (later stage)
+- **Data:** Products still in a TypeScript file (`web/src/lib/products.ts`). Accounts + orders
+  now in **PostgreSQL via Prisma** (done in Stage 2.5). Products move to the DB in Stage 3.
+- **Auth:** **NextAuth (Auth.js v5)** with a credentials (email + password) provider and JWT
+  sessions. Done in Stage 2.5.
 - **Payments:** Mock checkout first; real Stripe later
 - **Deploy target:** Vercel (later)
 
@@ -202,7 +203,29 @@ Legend: [ ] todo · [~] in progress · [x] done · [!] blocked/needs Tushar
 - [x] `web/data/users.json` + `orders.json` added to `.gitignore` (runtime data, not committed)
 - [x] Build clean (50 routes); API smoke-test passed (register → login → order → DRG-ORD-2026-0001)
 - [x] Tushar reviewed + approved
-- [ ] On approval: commit + push Stage 2
+- [x] Committed + pushed Stage 2 (1ba5363)
+
+### Stage 2.5 — Database + Real Auth (Opus) ✅ built, awaiting commit approval
+- [x] Local PostgreSQL installed (Homebrew `postgresql@16`) + `duraforge` database created
+- [x] Prisma added (v6) — schema: `User`, `Order`, `OrderLineItem`, NextAuth models, enums
+      (`Role`, `OrderStatus`, `PaymentMethod`). Migration `init` applied.
+- [x] `web/src/lib/prisma.ts` (client singleton) + `web/src/lib/store.ts` rewritten to use Prisma
+- [x] NextAuth (Auth.js v5) — credentials provider + JWT sessions (`web/src/auth.ts`,
+      `web/src/app/api/auth/[...nextauth]/route.ts`); password hashing in `web/src/lib/password.ts`
+- [x] Migrated API routes/pages/components off the file-store + custom cookie to NextAuth
+- [x] Existing JSON accounts/orders migrated into Postgres (`web/scripts/migrate-json-to-db.mjs`)
+- [x] `web/.env` (gitignored) + `web/.env.example` for other machines/deploys
+- [x] `build` script runs `prisma generate`; build clean; full flow smoke-tested (register →
+      NextAuth login → order `DRG-ORD-2026-0002`); wrong password correctly rejected
+- [x] Tushar approves → commit + push Stage 2.5
+
+**Local DB notes (important):**
+- Postgres runs via `brew services start postgresql@16`. Binaries live at
+  `/opt/homebrew/opt/postgresql@16/bin` (keg-only — add to PATH when running prisma/psql).
+- Connection string is in `web/.env` (`postgresql://tushar@localhost:5432/duraforge`).
+- To inspect data: `cd web && npm run db:studio` (Prisma Studio) or `psql duraforge`.
+- **At deploy time (Stage 4):** swap `DATABASE_URL` for a hosted Postgres (Supabase/Neon) —
+  no code changes needed. Set `AUTH_SECRET` in the host's env vars too.
 
 **How to test Stage 2:**
 1. Open **http://localhost:3001**
@@ -227,6 +250,25 @@ _(empty)_
 
 ## 9. SESSION LOG (newest first)
 
+- **2026-07-16 (Claude/Opus) — Stage 2.5: Database + real auth:** Replaced the temporary
+  file-based JSON store with a proper database and real authentication. Installed local
+  PostgreSQL 16 (Homebrew), added Prisma (v6) with a full schema (User/Order/OrderLineItem +
+  NextAuth models + enums) and ran the `init` migration. Rewired `store.ts` onto Prisma and
+  swapped the custom session cookie for **NextAuth (Auth.js v5)** — credentials provider, JWT
+  sessions, password hashing kept as scrypt in `lib/password.ts`. Removed the custom
+  `/api/auth/login` + `/logout` routes (NextAuth handles those via `[...nextauth]`); kept
+  `/api/auth/register` (creates the DB user, client then calls `signIn`) and `/api/auth/me`.
+  Migrated the existing JSON accounts/orders into Postgres via a one-off script; deleted the
+  now-obsolete `web/data/*.json`. Added `web/.env` (gitignored) + `web/.env.example`. Build is
+  clean and the full flow was smoke-tested end-to-end (register → login → order 0002; wrong
+  password rejected; data confirmed in Postgres). AWAITING Tushar approval to commit + push
+  Stage 2.5. NEXT UP: **Stage 3 with Composer** (order tracking + admin panel) — Tushar will
+  switch the model. Any model continuing: Postgres must be running
+  (`brew services start postgresql@16`) and PATH must include
+  `/opt/homebrew/opt/postgresql@16/bin` for prisma/psql; dev server on :3001 outside sandbox.
+- **2026-07-16 (Composer) — Stage 2 committed + pushed:** Commit `1ba5363` on `main`.
+  Accounts, basket, mock checkout, order confirmation, and orders API. Runtime user/order
+  data gitignored in `web/data/`. NEXT UP: Stage 3 (Pick-Pack-Ship tracker + admin panel).
 - **2026-07-16 (Composer) — Stage 2 built:** Accounts, basket, and mock checkout complete.
   Added file-based JSON storage (`web/data/` — gitignored at runtime), auth (scrypt + session
   cookies), cart context (localStorage), register/login/logout/me API routes, account pages,

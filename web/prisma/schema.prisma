@@ -1,0 +1,139 @@
+// Duraforge UK — database schema
+// Real Postgres via Prisma. Local dev uses Homebrew Postgres; production swaps
+// DATABASE_URL for a hosted provider (Supabase / Neon / Railway).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// A B2B trade customer (or an admin staff member).
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  companyName  String
+  vatNumber    String?
+  phone        String
+  role         Role     @default(CUSTOMER)
+
+  // Delivery address
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  county       String?
+  postcode     String
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders       Order[]
+
+  // NextAuth relations (reserved for future magic-link / OAuth)
+  accounts     Account[]
+  sessions     Session[]
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+/// A placed order. Cost columns are NEVER stored here — sale price only.
+model Order {
+  id            String        @id @default(cuid())
+  orderNumber   String        @unique
+  user          User          @relation(fields: [userId], references: [id])
+  userId        String
+  companyName   String
+  email         String
+  status        OrderStatus   @default(RECEIVED)
+
+  subtotalExVat Float
+  vatAmount     Float
+  totalIncVat   Float
+  paymentMethod PaymentMethod
+
+  // Address snapshot at time of order
+  shipLine1     String
+  shipLine2     String?
+  shipCity      String
+  shipCounty    String?
+  shipPostcode  String
+
+  notes         String?
+  createdAt     DateTime      @default(now())
+
+  lineItems     OrderLineItem[]
+
+  @@index([userId])
+}
+
+model OrderLineItem {
+  id             String @id @default(cuid())
+  order          Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId        String
+  sku            String
+  name           String
+  quantity       Int
+  unitPriceExVat Float
+
+  @@index([orderId])
+}
+
+enum OrderStatus {
+  RECEIVED
+  PICKING
+  PACKED
+  DESPATCHED
+  DELIVERED
+}
+
+enum PaymentMethod {
+  CARD
+  BACS
+}
+
+// ---------------------------------------------------------------------------
+// NextAuth (Auth.js) models — reserved for future OAuth / magic-link sign-in.
+// Credentials login currently uses JWT sessions and does not populate these.
+// ---------------------------------------------------------------------------
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
