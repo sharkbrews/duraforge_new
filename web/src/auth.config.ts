@@ -8,6 +8,7 @@ import type { UserRole } from "@/lib/types";
 export const ADMIN_SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours
 
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   pages: { signIn: "/account/login" },
   providers: [],

@@ -8,11 +8,23 @@ so you only need this when you're ready to go live.
 
 ---
 
-## 1. Hosted Postgres (Supabase or Neon)
+## 1. Hosted Postgres (Supabase or Neon) — **required before Vercel works**
 
-1. Create a free project at [supabase.com](https://supabase.com) or [neon.tech](https://neon.tech).
-2. Copy the connection string they give you (starts with `postgresql://`).
-3. You'll paste it into Vercel as `DATABASE_URL` (step 4).
+Your Mac Postgres only runs locally. Vercel needs a **cloud** database.
+
+### Neon (recommended — free tier, 2 minutes)
+
+1. Go to [neon.tech](https://neon.tech) → Sign up (GitHub is fine).
+2. **New Project** → name it `duraforge` → region **EU (London)** if available.
+3. On the dashboard, copy the **connection string** (starts with `postgresql://…`).
+   - Use the **pooled** connection string for `DATABASE_URL` on Vercel.
+4. You'll paste this into Vercel as `DATABASE_URL` (step 4).
+
+### Supabase (alternative)
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. **Project Settings → Database → Connection string → URI** (copy it).
+3. Paste into Vercel as `DATABASE_URL`.
 
 ## 2. Stripe (payments)
 
@@ -35,25 +47,46 @@ so you only need this when you're ready to go live.
 
 ## 4. Deploy to Vercel
 
-1. Go to [vercel.com](https://vercel.com), **Add New → Project**, import
-   `sharkbrews/duraforge_new`.
-2. Set **Root Directory** to `web`.
-3. Add Environment Variables (Project → Settings → Environment Variables):
+### Option A — Vercel website (easiest, recommended)
+
+1. Go to [vercel.com/new](https://vercel.com/new) and sign in with **GitHub**.
+2. Import **`sharkbrews/duraforge_new`**.
+3. On the configure screen:
+   - **Root Directory:** click *Edit* → select **`web`** → Continue.
+   - **Framework Preset:** Next.js (auto-detected).
+   - **Build Command:** leave default (`prisma generate && next build` from `vercel.json`).
+4. Expand **Environment Variables** and add these (Production + Preview + Development):
 
    | Name | Value |
    |---|---|
-   | `DATABASE_URL` | hosted Postgres string (step 1) |
+   | `DATABASE_URL` | hosted Postgres string (step 1) — **required** |
    | `AUTH_SECRET` | generate: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` |
-   | `STRIPE_SECRET_KEY` | from step 2 |
-   | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | from step 2 |
-   | `STRIPE_WEBHOOK_SECRET` | from step 2 |
-   | `KLAVIYO_API_KEY` | from step 3 (optional) |
-   | `ADMIN_EMAIL` | your admin login email |
-   | `ADMIN_INITIAL_PASSWORD` | a strong temporary password |
-   | `ADMIN_IP_ALLOWLIST` | office/VPN IPs, comma-separated (or blank) |
-   | `COMPANY_VAT_NUMBER` | once VAT-registered |
+   | `AUTH_TRUST_HOST` | `true` |
+   | `ADMIN_EMAIL` | e.g. `admin@duraforge.co.uk` |
+   | `ADMIN_INITIAL_PASSWORD` | strong temp password (change on first login) |
+   | `ADMIN_IP_ALLOWLIST` | leave **empty** for now (allows all IPs) |
+   | `STRIPE_SECRET_KEY` | optional — leave empty for mock checkout |
+   | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | optional |
+   | `STRIPE_WEBHOOK_SECRET` | optional |
+   | `KLAVIYO_API_KEY` | optional |
 
-4. Deploy. The build runs `prisma generate && next build`.
+5. Click **Deploy**. First build takes ~2 minutes.
+6. After deploy succeeds, run step 5 below (migrate + seed the hosted DB).
+7. Open your site URL → register a trade account → test checkout.
+
+### Option B — Vercel CLI (if you prefer terminal)
+
+```bash
+cd web
+npx vercel login          # one-time browser auth
+npx vercel link           # link to your Vercel project
+npx vercel env add DATABASE_URL
+npx vercel env add AUTH_SECRET
+# … add other vars …
+npx vercel --prod
+```
+
+Then run step 5 (migrate + seed) against the hosted DB.
 
 ## 5. First-time database setup (once, after first deploy)
 
