@@ -1,3 +1,11 @@
 # Local secrets — never commit
 .local/
 .vercel/
+
+# Royal Composites catalogue extract (copyrighted supplier content) — never commit
+docs/catalogue/
+docs/royal-seals-catalogue-2026.pdf
+
+# Python bytecode caches
+__pycache__/
+*.pyc
