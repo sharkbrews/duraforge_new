@@ -6,7 +6,7 @@ import { ProductDetail } from "@/components/product-detail";
 import { ProductCard } from "@/components/product-card";
 
 export function generateStaticParams() {
-  return products.map((p) => ({ sku: p.sku }));
+  return products.map((p) => ({ sku: p.dfSku }));
 }
 
 export async function generateMetadata({

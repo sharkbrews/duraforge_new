@@ -20,7 +20,10 @@ export function ProductDetail({ product }: { product: Product }) {
       <div>
         <div className="flex flex-wrap gap-1.5">
           <span className="rounded bg-navy/10 px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide text-navy">
-            {product.sku}
+            {product.dfSku}
+          </span>
+          <span className="rounded bg-slate-brand/10 px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-wide text-slate-brand">
+            Alias {product.sku}
           </span>
           <span className="rounded bg-orange/10 px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide text-orange">
             {product.material}

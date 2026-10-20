@@ -26,7 +26,7 @@ export function KitFinderWidget() {
 
   function handleFind() {
     const kit = ready ? findKit(brand, model, position) : undefined;
-    if (kit) router.push(`/product/${kit.sku}`);
+    if (kit) router.push(`/product/${kit.dfSku}`);
     else router.push("/finder");
   }
 

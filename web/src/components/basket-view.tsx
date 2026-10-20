@@ -61,12 +61,12 @@ export function BasketView() {
           >
             <div className="flex-1">
               <Link
-                href={`/product/${product.sku}`}
+                href={`/product/${product.dfSku}`}
                 className="font-display font-bold text-navy hover:text-orange"
               >
                 {product.name}
               </Link>
-              <p className="mt-1 font-mono text-xs text-slate-brand">{product.sku}</p>
+              <p className="mt-1 font-mono text-xs text-slate-brand">{product.dfSku}</p>
               <p className="mt-1 text-sm text-slate-brand">
                 {gbp(product.price)} ex-VAT each
               </p>

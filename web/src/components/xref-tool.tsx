@@ -71,7 +71,7 @@ export function XrefTool() {
               <h2 className="mt-1 font-display text-xl font-extrabold text-navy">
                 {result.name}
               </h2>
-              <p className="mt-0.5 font-mono text-xs text-slate-brand">{result.sku}</p>
+              <p className="mt-0.5 font-mono text-xs text-slate-brand">{result.dfSku}</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-slate-brand line-through">FPE {gbp(result.fpePrice)}</p>
@@ -83,7 +83,7 @@ export function XrefTool() {
                 Ours is {savingsPercent(result)}% cheaper. Add to basket?
               </p>
               <Link
-                href={`/product/${result.sku}`}
+                href={`/product/${result.dfSku}`}
                 className="mt-3 inline-block rounded-lg bg-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
               >
                 View kit →

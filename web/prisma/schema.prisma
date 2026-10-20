@@ -135,9 +135,45 @@ model Product {
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  identifiers      ProductIdentifier[]
 
   @@index([brandSlug])
   @@index([isActive])
+}
+
+enum IdentifierType {
+  DF_SKU
+  DRG_ALIAS
+  SUPPLIER_CODE
+  FPE_REF
+  OEM_REF
+  CROSS_REF
+  GTIN
+}
+
+enum IdentifierStatus {
+  VERIFIED
+  UNVERIFIED
+}
+
+/// Any code a customer may search by. Internal DF_SKU is the stable identity.
+/// productId is null for register rows that have no product record yet.
+model ProductIdentifier {
+  id         String           @id @default(cuid())
+  type       IdentifierType
+  value      String
+  normalised String
+  status     IdentifierStatus @default(UNVERIFIED)
+  source     String
+  productId  String?
+  product    Product?         @relation(fields: [productId], references: [id], onDelete: SetNull)
+  detail     Json?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([type, normalised])
+  @@index([normalised])
+  @@index([productId])
 }
 
 enum EnquiryStatus {

@@ -250,6 +250,19 @@ def main() -> int:
             "fpe_candidates": fpe["fpe_candidates"], "fpe_match_basis": FPE_BASIS,
         })
 
+    # One FPE part claimed by several Royal rows is not a unique match: keep it as a candidate.
+    claims: dict[str, int] = defaultdict(int)
+    for r in out:
+        if r["fpe_sku"]:
+            claims[r["fpe_sku"]] += 1
+    for r in out:
+        if r["fpe_status"] == "DIMENSION_MATCHED" and claims[r["fpe_sku"]] > 1:
+            r["fpe_candidates"] = r["fpe_sku"]
+            r["fpe_sku"] = ""
+            r["fpe_status"] = "AMBIGUOUS"
+            fpe_counts["DIMENSION_MATCHED"] -= 1
+            fpe_counts["AMBIGUOUS"] += 1
+
     retired = 0
     for norm, prev in existing.items():
         if norm not in current:

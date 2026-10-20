@@ -131,7 +131,7 @@ export function FinderTool() {
             <div>
               <div className="flex flex-wrap gap-1.5">
                 <span className="rounded bg-navy px-2 py-0.5 font-mono text-[11px] font-bold text-white">
-                  {result.sku}
+                  {result.dfSku}
                 </span>
                 {result.crossRefs[0] && (
                   <span className="rounded bg-orange px-2 py-0.5 font-mono text-[11px] font-bold text-white">
@@ -157,7 +157,7 @@ export function FinderTool() {
                 Save {savingsPercent(result)}%
               </p>
               <Link
-                href={`/product/${result.sku}`}
+                href={`/product/${result.dfSku}`}
                 className="mt-3 inline-block rounded-lg bg-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
               >
                 View full kit →
