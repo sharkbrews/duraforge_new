@@ -1,0 +1,25 @@
+# Dependencies for docs/scripts (PDF -> Markdown -> PDF). Python 3.11+ (tested on 3.11; 3.12 compatible).
+# Everything is pip-installable and runs locally; no API keys, no network at run time.
+#   pip install -r docs/scripts/requirements.txt
+
+# Core extraction (text, geometry, images, links, rendering). NOTE: PyMuPDF is AGPL-3.0 licensed.
+# Developed and verified against PyMuPDF 2.0 (MuPDF 1.28).
+pymupdf>=1.24
+
+# Validation: independent text oracle (pdfminer) and fast string similarity
+pdfplumber>=0.11
+rapidfuzz>=3.0
+
+# Markdown parsing/rendering (same engine family as VS Code's preview) and front matter
+markdown-it-py>=3.0
+mdit-py-plugins>=0.4
+pyyaml>=6.0
+
+# OCR for scanned/mixed PDFs (pure pip, ONNX runtime, no external binaries).
+# rapidocr-onnxruntime also installs OpenCV, which we use for raster ruling-line detection.
+numpy>=1.26
+rapidocr-onnxruntime>=1.3
+pytesseract>=0.3.10           # optional: only used if the Tesseract binary is installed
+
+# Tests
+pytest>=8.0

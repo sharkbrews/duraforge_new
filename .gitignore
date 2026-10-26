@@ -6,6 +6,15 @@
 docs/catalogue/
 docs/royal-seals-catalogue-2026.pdf
 
+# Python virtual environment and the PDF-to-Markdown toolkit's run logs / OCR cache
+.venv/
+docs/logs/
+docs/output/
+docs/~$*.docx
+
 # Python bytecode caches
 __pycache__/
 *.pyc
+
+# Generated OEM Knowledge Base parse output (regenerate with web/scripts/oem-kb/run-import.ps1)
+web/scripts/oem-kb/emd_excon2025.json

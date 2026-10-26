@@ -10,6 +10,7 @@ const navLinks = [
   { label: "Seal Kit Finder", href: "/finder" },
   { label: "Shop", href: "/shop" },
   { label: "Cross-Reference", href: "/cross-reference" },
+  { label: "OEM Knowledge Base", href: "/oem-knowledge-base" },
   { label: "Industries", href: "/industries" },
   { label: "Contact", href: "/contact" },
 ];
