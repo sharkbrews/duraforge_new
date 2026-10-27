@@ -38,6 +38,7 @@ import {
   PRO_MEMBER_THRESHOLD,
 } from "./loyalty";
 import { trackEmailEvent } from "./email-events";
+import { sendOrderRequestNotifications } from "./email";
 
 // ---------------------------------------------------------------------------
 // Mappers: Prisma rows -> app-facing types (keeps the rest of the app stable).
@@ -258,11 +259,11 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         userId: input.userId,
         companyName: input.companyName,
         email: input.email,
-        status: "RECEIVED",
+        status: "PENDING_REVIEW",
         subtotalExVat: input.subtotalExVat,
         vatAmount: input.vatAmount,
         totalIncVat: input.totalIncVat,
-        paymentMethod: input.paymentMethod === "bacs" ? "BACS" : "CARD",
+        paymentMethod: "TRADE_ACCOUNT",
         shipLine1: input.shippingAddress.line1,
         shipLine2: input.shippingAddress.line2 || null,
         shipCity: input.shippingAddress.city,
@@ -318,6 +319,14 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
     orderNumber: row.orderNumber,
     totalIncVat: input.totalIncVat,
   });
+  void sendOrderRequestNotifications({
+    orderNumber: row.orderNumber,
+    customerEmail: input.email,
+    companyName: input.companyName,
+    requestedValue: input.totalIncVat,
+  }).catch((error) => {
+    console.error("Trade order notification failed:", error);
+  });
   if (coins > 0) {
     trackEmailEvent("duracoins.earned", {
       email: input.email,
@@ -339,6 +348,7 @@ export async function getAllOrders(status?: PickPackStatus): Promise<Order[]> {
     where: status
       ? {
           status: status.toUpperCase() as
+            | "PENDING_REVIEW"
             | "RECEIVED"
             | "PICKING"
             | "PACKED"
@@ -364,6 +374,7 @@ export async function updateOrderStatus(
   input: UpdateOrderStatusInput,
 ): Promise<Order | undefined> {
   const dbStatus = input.status.toUpperCase() as
+    | "PENDING_REVIEW"
     | "RECEIVED"
     | "PICKING"
     | "PACKED"

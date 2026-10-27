@@ -39,17 +39,15 @@ export default async function ConfirmationPage({
       <div className="rounded-3xl border border-success/30 bg-success/5 p-10">
         <p className="text-5xl">💪</p>
         <h1 className="mt-4 font-display text-3xl font-extrabold text-navy">
-          Sorted! Your seals are already being picked.
+          Trade order request received
         </h1>
         <p className="mt-3 text-slate-brand">
-          We&apos;re quick like that. Order reference:
+          We&apos;ll review availability and confirm your order and trade terms.
         </p>
         <p className="mt-2 font-mono text-xl font-bold text-navy">{order.orderNumber}</p>
         <p className="mt-4 text-sm text-slate-brand">
-          Total paid: <strong className="text-ink">{gbp(order.totalIncVat)} inc-VAT</strong>
-          {order.paymentMethod === "bacs" && (
-            <> · BACS reference will be emailed shortly</>
-          )}
+          Requested value: <strong className="text-ink">{gbp(order.totalIncVat)}</strong>
+          {" "}· No payment has been taken
         </p>
 
         {coinsEarned > 0 && (

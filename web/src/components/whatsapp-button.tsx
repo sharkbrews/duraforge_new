@@ -2,7 +2,7 @@ import Link from "next/link";
 
 // Placeholder number — replaced with the real Twilio WhatsApp Business number later.
 const WHATSAPP_HREF =
-  "https://wa.me/440000000000?text=Hi%20Duraforge%2C%20I%20need%20a%20seal%20kit%20for%20";
+  "https://wa.me/447417309751?text=Hi%20Duraforge%2C%20I%20need%20a%20seal%20kit%20for%20";
 
 export function WhatsAppButton() {
   return (

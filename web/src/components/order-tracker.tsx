@@ -22,7 +22,7 @@ export function OrderTracker({ order }: { order: Order }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
       <h2 className="font-display text-lg font-bold text-navy">
-        Pick · Pack · Ship
+        Trade order progress
       </h2>
       <p className="mt-1 text-sm text-slate-brand">
         {STATUS_MESSAGES[order.status]}
@@ -90,8 +90,8 @@ export function OrderTracker({ order }: { order: Order }) {
       {order.status === "despatched" && order.trackingNumber && (
         <p className="mt-4 rounded-lg bg-navy/5 px-4 py-3 text-sm text-slate-brand">
           Need it faster? Call us on{" "}
-          <a href="tel:01474555555" className="font-semibold text-orange hover:underline">
-            01474 555 555
+          <a href="tel:+447417309751" className="font-semibold text-orange hover:underline">
+            +44 7417 309 751
           </a>
         </p>
       )}

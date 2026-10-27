@@ -6,7 +6,7 @@ import { useCart } from "@/lib/cart-context";
 import { getProduct } from "@/lib/products";
 import { gbp } from "@/lib/format";
 
-const VAT_RATE = 0.2;
+const VAT_RATE = 0;
 
 export function BasketView() {
   const { items, setQuantity, removeItem } = useCart();
@@ -117,7 +117,7 @@ export function BasketView() {
             <dd className="font-semibold">{gbp(subtotal)}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-slate-brand">VAT (20%)</dt>
+            <dt className="text-slate-brand">VAT (registration pending)</dt>
             <dd className="font-semibold">{gbp(vat)}</dd>
           </div>
           <div className="flex justify-between border-t border-slate-100 pt-2 text-base">

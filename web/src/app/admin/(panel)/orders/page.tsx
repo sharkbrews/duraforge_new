@@ -15,6 +15,7 @@ export default async function AdminOrdersPage({
 
   const filters: { value?: PickPackStatus; label: string }[] = [
     { label: "All" },
+    { value: "pending_review", label: "Pending review" },
     { value: "received", label: "Received" },
     { value: "picking", label: "Picking" },
     { value: "packed", label: "Packed" },

@@ -16,7 +16,7 @@ const faqs = [
   },
   {
     q: "What are DuraCoins?",
-    a: "Our loyalty programme: £1 spent (inc-VAT) = 1 DuraCoin. Hit milestones for discounts, credit, and Pro status. See your account dashboard after signing in.",
+    a: "Our loyalty programme: £1 spent = 1 DuraCoin. Hit milestones for discounts, credit, and Pro status. See your account dashboard after signing in.",
   },
   {
     q: "Do you hold CE / UKCA certification?",
@@ -24,7 +24,7 @@ const faqs = [
   },
   {
     q: "Can I pay on account?",
-    a: "BACS is available at checkout now. Net-30 trade credit is on the roadmap (Opus + Stripe Invoicing in Stage 4b).",
+    a: "Orders are submitted for trade review without online payment. Approved trade customers may be offered 30-day terms by Duraforge.",
   },
   {
     q: "How do I find the right kit?",

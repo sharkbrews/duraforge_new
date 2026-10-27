@@ -21,4 +21,5 @@ export function isStripeLive(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY);
 }
 
-export const VAT_RATE = 0.2;
+// Online payments are not enabled. Retained for the future Stripe integration.
+export const VAT_RATE = 0;

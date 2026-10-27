@@ -213,6 +213,7 @@ model OrderLineItem {
 }
 
 enum OrderStatus {
+  PENDING_REVIEW
   RECEIVED
   PICKING
   PACKED
@@ -221,6 +222,7 @@ enum OrderStatus {
 }
 
 enum PaymentMethod {
+  TRADE_ACCOUNT
   CARD
   BACS
 }
