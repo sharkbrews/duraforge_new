@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { getClientIp } from "@/lib/ip-allowlist";
 import { OemEnquiryError, getOemEnquiryView, parseNote, submitOemEnquiry } from "@/lib/oem-enquiry";
+import { sendOemEnquiryNotification } from "@/lib/email";
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
@@ -17,7 +18,23 @@ export async function POST(request: Request) {
       detail: enquiryId,
       ip: getClientIp(request.headers),
     });
-    return NextResponse.json(await getOemEnquiryView(user.id));
+    const view = await getOemEnquiryView(user.id);
+    const submission = view.submissions.find((item) => item.id === enquiryId);
+    if (!submission) {
+      console.error(`Submitted OEM enquiry ${enquiryId} was not available for notification.`);
+    } else {
+      void sendOemEnquiryNotification({
+        customerEmail: user.email,
+        companyName: user.companyName,
+        phone: user.phone,
+        note: submission.note ?? undefined,
+        items: submission.items,
+      }).catch((error) => {
+        console.error("OEM enquiry notification failed:", error);
+      });
+    }
+
+    return NextResponse.json(view);
   } catch (error) {
     if (error instanceof OemEnquiryError) return NextResponse.json({ error: error.message }, { status: error.status });
     console.error("Submitting OEM enquiry failed:", error);

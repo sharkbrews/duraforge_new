@@ -97,3 +97,46 @@ Email: ${input.email}
 ${input.message}`,
   });
 }
+
+export async function sendOemEnquiryNotification(input: {
+  customerEmail: string;
+  companyName: string;
+  phone: string;
+  note?: string;
+  items: Array<{
+    brand: string;
+    machineName: string;
+    application: string;
+    oemPartNumber: string;
+    quantity: number;
+  }>;
+}): Promise<void> {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) {
+    console.warn("Admin OEM enquiry notification skipped: ADMIN_EMAIL is not configured.");
+    return;
+  }
+
+  const itemLines = input.items
+    .map(
+      (item) =>
+        `- ${item.quantity} × ${item.brand} ${item.machineName} / ${item.application} / ${item.oemPartNumber}`,
+    )
+    .join("\n");
+
+  await sendTransactionalEmail({
+    to: adminEmail,
+    subject: `New OEM enquiry from ${input.companyName}`,
+    text: `New OEM knowledge-base enquiry
+
+Company: ${input.companyName}
+Email: ${input.customerEmail}
+Phone: ${input.phone}
+
+Requested parts:
+${itemLines}
+
+Customer note:
+${input.note || "No additional note provided."}`,
+  });
+}

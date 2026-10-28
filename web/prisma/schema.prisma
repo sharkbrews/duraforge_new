@@ -68,6 +68,12 @@ model Order {
   companyName   String
   email         String
   status        OrderStatus   @default(RECEIVED)
+  tradeTermsStatus TradeTermsStatus @default(PENDING)
+  tradeTermsApprovedAt DateTime?
+  tradeTermsApprovedBy String?
+  paymentStatus InvoicePaymentStatus @default(UNPAID)
+  paidAt        DateTime?
+  reconciledAt  DateTime?
 
   subtotalExVat Float
   vatAmount     Float
@@ -225,6 +231,19 @@ enum PaymentMethod {
   TRADE_ACCOUNT
   CARD
   BACS
+}
+
+enum InvoicePaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID_PENDING_RECONCILIATION
+  PAID_RECONCILED
+}
+
+enum TradeTermsStatus {
+  PENDING
+  APPROVED_NET_30
+  DECLINED
 }
 
 // ---------------------------------------------------------------------------

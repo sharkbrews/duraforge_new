@@ -29,10 +29,12 @@ export default async function ConfirmationPage({
   ]);
   if (!order || order.userId !== userId) notFound();
 
-  const coinsEarned = coinsForOrder(order.totalIncVat);
+  const paidAndReconciled = order.paymentStatus === "paid_reconciled";
+  const coinsEarned = paidAndReconciled ? coinsForOrder(order.totalIncVat) : 0;
   const showSpin =
+    paidAndReconciled &&
     loyalty.canSpin &&
-    (order.totalIncVat >= SPIN_ORDER_THRESHOLD || loyalty.canSpin);
+    order.totalIncVat >= SPIN_ORDER_THRESHOLD;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
