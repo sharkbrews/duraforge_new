@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 const statusLabels: Record<string, string> = {
+  pending_review: "Pending trade review",
   received: "Received",
   picking: "Picking",
   packed: "Packed",
@@ -62,7 +63,7 @@ export default async function OrdersPage() {
                 ))}
               </ul>
               <p className="mt-3 font-semibold text-navy">
-                {gbp(order.totalIncVat)} inc-VAT
+                {gbp(order.totalIncVat)} requested value
               </p>
               <Link
                 href={`/account/orders/${encodeURIComponent(order.orderNumber)}`}

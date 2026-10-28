@@ -1,6 +1,7 @@
 import type { PickPackStatus } from "./types";
 
 export const PICK_PACK_STAGES: PickPackStatus[] = [
+  "pending_review",
   "received",
   "picking",
   "packed",
@@ -9,6 +10,7 @@ export const PICK_PACK_STAGES: PickPackStatus[] = [
 ];
 
 export const STATUS_LABELS: Record<PickPackStatus, string> = {
+  pending_review: "Pending trade review",
   received: "Order received",
   picking: "Picking",
   packed: "Packed & quality checked",
@@ -17,6 +19,7 @@ export const STATUS_LABELS: Record<PickPackStatus, string> = {
 };
 
 export const STATUS_MESSAGES: Record<PickPackStatus, string> = {
+  pending_review: "We've received your request and will confirm trade terms shortly.",
   received: "We've got it, we're on it 💪",
   picking: "Rummaging through the shelves for your kit…",
   packed: "Sealed, labelled, double-checked. It's a beauty.",
@@ -25,6 +28,7 @@ export const STATUS_MESSAGES: Record<PickPackStatus, string> = {
 };
 
 export const STATUS_ICONS: Record<PickPackStatus, string> = {
+  pending_review: "📝",
   received: "📥",
   picking: "🔍",
   packed: "✅",
@@ -45,8 +49,9 @@ export function isStageComplete(
 
 export function dbStatusFromPickPack(
   status: PickPackStatus,
-): "RECEIVED" | "PICKING" | "PACKED" | "DESPATCHED" | "DELIVERED" {
+): "PENDING_REVIEW" | "RECEIVED" | "PICKING" | "PACKED" | "DESPATCHED" | "DELIVERED" {
   return status.toUpperCase() as
+    | "PENDING_REVIEW"
     | "RECEIVED"
     | "PICKING"
     | "PACKED"

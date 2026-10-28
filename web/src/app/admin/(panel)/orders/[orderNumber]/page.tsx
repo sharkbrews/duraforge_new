@@ -57,7 +57,7 @@ export default async function AdminOrderDetailPage({
           ))}
         </ul>
         <p className="mt-4 border-t border-slate-100 pt-4 font-bold">
-          Total: {gbp(order.totalIncVat)} inc-VAT
+          Requested value: {gbp(order.totalIncVat)}
         </p>
         {order.notes && (
           <p className="mt-3 text-sm text-slate-brand">

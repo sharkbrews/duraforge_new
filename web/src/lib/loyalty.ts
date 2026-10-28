@@ -8,7 +8,7 @@ export const DURACOIN_MILESTONES = [
 
 export const PRO_MEMBER_THRESHOLD = 5000;
 
-/** £1 spent inc-VAT = 1 DuraCoin (rounded down). */
+/** £1 of approved order value = 1 DuraCoin (rounded down). */
 export function coinsForOrder(totalIncVat: number): number {
   return Math.floor(totalIncVat);
 }
@@ -58,5 +58,5 @@ export function canSpinThisMonth(lastSpinMonth: string | null | undefined): bool
   return lastSpinMonth !== currentMonthKey();
 }
 
-/** Order total qualifies for a post-checkout spin prompt (£200+ inc-VAT). */
+/** Approved order value qualifies for a post-order spin prompt (£200+). */
 export const SPIN_ORDER_THRESHOLD = 200;

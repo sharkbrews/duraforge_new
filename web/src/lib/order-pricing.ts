@@ -1,7 +1,7 @@
 import { getProduct } from "./products";
 import type { OrderLineItem } from "./types";
 
-export const VAT_RATE = 0.2;
+export const VAT_RATE = 0;
 
 export interface PricedOrder {
   lineItems: OrderLineItem[];

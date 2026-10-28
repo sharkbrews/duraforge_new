@@ -8,6 +8,8 @@
 // rules and must never reach the customer. `price` is the customer sale price
 // (GBP, ex-VAT). `fpePrice` is the competitor reference used only to show savings.
 
+import { normaliseCode } from "./identifiers";
+
 export type Material = "NBR" | "PU" | "PTFE" | "FKM";
 
 export type CrossRefSource = "FPE" | "Hallite" | "JCB OEM" | "CAT OEM";
@@ -23,7 +25,10 @@ export interface KitComponent {
 }
 
 export interface Product {
+  // Legacy DRG code; still accepted in URLs, the cart and orders.
   sku: string;
+  // Stable Duraforge identity (DF-######). Shown as the primary code.
+  dfSku: string;
   name: string;
   brand: string;
   brandSlug: string;
@@ -58,6 +63,7 @@ export const products: Product[] = [
   // ---- JCB 3DX / 3CX (2010-11 black cylinder) ----
   {
     sku: "DRG-NBR-3DX-BOOM",
+    dfSku: "DF-003238",
     name: "JCB 3DX/3CX Boom Cylinder Seal Kit",
     brand: "JCB",
     brandSlug: "jcb",
@@ -84,6 +90,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-NBR-3DX-DIPPER",
+    dfSku: "DF-003239",
     name: "JCB 3DX/3CX Dipper Cylinder Seal Kit",
     brand: "JCB",
     brandSlug: "jcb",
@@ -110,6 +117,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-NBR-3DX-BUCKET",
+    dfSku: "DF-003240",
     name: "JCB 3DX/3CX Bucket Cylinder Seal Kit",
     brand: "JCB",
     brandSlug: "jcb",
@@ -133,6 +141,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-NBR-3DX-STAB",
+    dfSku: "DF-003241",
     name: "JCB 3DX/3CX Stabiliser Cylinder Seal Kit",
     brand: "JCB",
     brandSlug: "jcb",
@@ -156,6 +165,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-NBR-3DX-STEER",
+    dfSku: "DF-003242",
     name: "JCB 3DX/3CX Steering Ram Seal Kit",
     brand: "JCB",
     brandSlug: "jcb",
@@ -181,6 +191,7 @@ export const products: Product[] = [
   // ---- JCB 531-70 Telehandler ----
   {
     sku: "DRG-PU-531-BOOMLIFT",
+    dfSku: "DF-003243",
     name: "JCB 531-70 Telehandler Boom Lift Cylinder Seal Kit",
     brand: "JCB",
     brandSlug: "jcb",
@@ -204,6 +215,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-PU-531-TILT",
+    dfSku: "DF-003244",
     name: "JCB 531-70 Telehandler Carriage Tilt Cylinder Seal Kit",
     brand: "JCB",
     brandSlug: "jcb",
@@ -229,6 +241,7 @@ export const products: Product[] = [
   // ---- JCB 535-95 Telehandler ----
   {
     sku: "DRG-PU-535-BOOMLIFT",
+    dfSku: "DF-003245",
     name: "JCB 535-95 Telehandler Boom Lift Cylinder Seal Kit",
     brand: "JCB",
     brandSlug: "jcb",
@@ -254,6 +267,7 @@ export const products: Product[] = [
   // ---- CAT 424B ----
   {
     sku: "DRG-PU-CAT424-BOOM",
+    dfSku: "DF-003246",
     name: "CAT 424B Boom Cylinder Seal Kit (2012)",
     brand: "CAT / Caterpillar",
     brandSlug: "caterpillar",
@@ -277,6 +291,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-PU-CAT424-DIPPER",
+    dfSku: "DF-003247",
     name: "CAT 424B Dipper Cylinder Seal Kit",
     brand: "CAT / Caterpillar",
     brandSlug: "caterpillar",
@@ -302,6 +317,7 @@ export const products: Product[] = [
   // ---- Hyva tipper cylinders ----
   {
     sku: "DRG-PU-HYVA-162-4",
+    dfSku: "DF-003248",
     name: "Hyva FE-162-4 Tipper Cylinder Seal Kit",
     brand: "Hyva",
     brandSlug: "hyva",
@@ -330,6 +346,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-PU-HYVA-141-3",
+    dfSku: "DF-003249",
     name: "Hyva FE-141-3 Tipper Cylinder Seal Kit",
     brand: "Hyva",
     brandSlug: "hyva",
@@ -358,6 +375,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-PU-HYVA-120-3",
+    dfSku: "DF-003250",
     name: "Hyva FE-120-3 Tipper Cylinder Seal Kit",
     brand: "Hyva",
     brandSlug: "hyva",
@@ -388,6 +406,7 @@ export const products: Product[] = [
   // ---- Kubota KX016-4 ----
   {
     sku: "DRG-PU-KX016-ARM",
+    dfSku: "DF-003251",
     name: "Kubota KX016-4 Arm Cylinder Seal Kit",
     brand: "Kubota",
     brandSlug: "kubota",
@@ -411,6 +430,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-PU-KX016-BOOM",
+    dfSku: "DF-003252",
     name: "Kubota KX016-4 Boom Cylinder Seal Kit",
     brand: "Kubota",
     brandSlug: "kubota",
@@ -434,6 +454,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-PU-KX016-BUCKET",
+    dfSku: "DF-003253",
     name: "Kubota KX016-4 Bucket Cylinder Seal Kit",
     brand: "Kubota",
     brandSlug: "kubota",
@@ -459,6 +480,7 @@ export const products: Product[] = [
   // ---- Takeuchi ----
   {
     sku: "DRG-NBR-TB250-BOOM",
+    dfSku: "DF-003254",
     name: "Takeuchi TB250 Boom Cylinder Seal Kit",
     brand: "Takeuchi",
     brandSlug: "takeuchi",
@@ -482,6 +504,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-NBR-TB230-BOOM",
+    dfSku: "DF-003255",
     name: "Takeuchi TB230 / TB325R Boom Cylinder Seal Kit",
     brand: "Takeuchi",
     brandSlug: "takeuchi",
@@ -505,6 +528,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-NBR-TB230-BLADE",
+    dfSku: "DF-003256",
     name: "Takeuchi TB230 / TB325R Blade Cylinder Seal Kit",
     brand: "Takeuchi",
     brandSlug: "takeuchi",
@@ -530,6 +554,7 @@ export const products: Product[] = [
   // ---- Hyundai R210LC-9 ----
   {
     sku: "DRG-PU-R210-BOOM",
+    dfSku: "DF-003257",
     name: "Hyundai R210LC-9 Boom Cylinder Seal Kit",
     brand: "Hyundai",
     brandSlug: "hyundai",
@@ -553,6 +578,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-PU-R210-ARM",
+    dfSku: "DF-003258",
     name: "Hyundai R210LC-9 Arm Cylinder Seal Kit",
     brand: "Hyundai",
     brandSlug: "hyundai",
@@ -576,6 +602,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-PU-R210-BUCKET",
+    dfSku: "DF-003259",
     name: "Hyundai R210LC-9 Bucket Cylinder Seal Kit",
     brand: "Hyundai",
     brandSlug: "hyundai",
@@ -601,6 +628,7 @@ export const products: Product[] = [
   // ---- Bobcat E50Z / E55Z ----
   {
     sku: "DRG-PU-E50-BOOM",
+    dfSku: "DF-003260",
     name: "Bobcat E50Z / E55Z Boom Cylinder Seal Kit",
     brand: "Bobcat",
     brandSlug: "bobcat",
@@ -624,6 +652,7 @@ export const products: Product[] = [
   },
   {
     sku: "DRG-PU-E50-ARM",
+    dfSku: "DF-003261",
     name: "Bobcat E50Z / E55Z Arm Cylinder Seal Kit",
     brand: "Bobcat",
     brandSlug: "bobcat",
@@ -653,8 +682,11 @@ export function savingsPercent(p: Product): number {
   return Math.round((1 - p.price / p.fpePrice) * 100);
 }
 
-export function getProduct(sku: string): Product | undefined {
-  return products.find((p) => p.sku.toLowerCase() === sku.toLowerCase());
+export function getProduct(code: string): Product | undefined {
+  const key = normaliseCode(code);
+  return products.find(
+    (p) => normaliseCode(p.dfSku) === key || normaliseCode(p.sku) === key,
+  );
 }
 
 export function getByBrandSlug(slug: string): Product[] {
@@ -719,8 +751,8 @@ export function crossRefLookup(query: string): Product | undefined {
   const clean = query.trim().toUpperCase().replace(/[-_/\s]/g, "");
   if (!clean) return undefined;
   return products.find((p) => {
-    const skuClean = p.sku.toUpperCase().replace(/[-_/\s]/g, "");
-    if (skuClean.includes(clean)) return true;
+    const codeClean = [p.dfSku, p.sku].map((c) => c.toUpperCase().replace(/[-_/\s]/g, ""));
+    if (codeClean.some((c) => c.includes(clean))) return true;
     return p.crossRefs.some((c) => {
       const refClean = c.part.toUpperCase().replace(/[-_/\s]/g, "");
       return refClean.includes(clean) || clean.includes(refClean);

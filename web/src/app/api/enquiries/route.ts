@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createEnquiry } from "@/lib/store";
+import { sendEnquiryNotification } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -25,6 +26,14 @@ export async function POST(request: Request) {
       email,
       phone,
       message,
+    });
+    void sendEnquiryNotification({
+      name,
+      email,
+      companyName,
+      message,
+    }).catch((error) => {
+      console.error("Website enquiry notification failed:", error);
     });
 
     return NextResponse.json({ enquiry });

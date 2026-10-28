@@ -23,6 +23,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.duraforge.co.uk",
+  ),
+  alternates: { canonical: "/" },
   title: "Duraforge UK | Hydraulic Seal Kits, 25% Cheaper, Same-Day in Kent",
   description:
     "Trade-only hydraulic seal kits for JCB, CAT, Hyva, Kubota and more. 25–30% below FPE & Hallite. Same-day delivery within 30 miles of Swanscombe, Kent. No minimum order.",

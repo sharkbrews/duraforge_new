@@ -45,12 +45,12 @@ export default async function OrderTrackPage({
             </li>
           ))}
         </ul>
-        <p className="mt-3 font-semibold text-navy">{gbp(order.totalIncVat)} inc-VAT</p>
+        <p className="mt-3 font-semibold text-navy">{gbp(order.totalIncVat)} requested value</p>
         <Link
           href={`/account/orders/${encodeURIComponent(order.orderNumber)}/invoice`}
           className="mt-4 inline-block text-sm font-semibold text-orange hover:underline"
         >
-          Download VAT invoice →
+          View trade order summary →
         </Link>
       </section>
     </div>

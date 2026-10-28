@@ -47,6 +47,7 @@ model User {
   coinLedger   DuraCoinLedger[]
   badges       UserBadge[]
   spinResults  SpinResult[]
+  oemEnquiries OemEnquiry[]
 
   // NextAuth relations (reserved for future magic-link / OAuth)
   accounts     Account[]
@@ -135,9 +136,45 @@ model Product {
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  identifiers      ProductIdentifier[]
 
   @@index([brandSlug])
   @@index([isActive])
+}
+
+enum IdentifierType {
+  DF_SKU
+  DRG_ALIAS
+  SUPPLIER_CODE
+  FPE_REF
+  OEM_REF
+  CROSS_REF
+  GTIN
+}
+
+enum IdentifierStatus {
+  VERIFIED
+  UNVERIFIED
+}
+
+/// Any code a customer may search by. Internal DF_SKU is the stable identity.
+/// productId is null for register rows that have no product record yet.
+model ProductIdentifier {
+  id         String           @id @default(cuid())
+  type       IdentifierType
+  value      String
+  normalised String
+  status     IdentifierStatus @default(UNVERIFIED)
+  source     String
+  productId  String?
+  product    Product?         @relation(fields: [productId], references: [id], onDelete: SetNull)
+  detail     Json?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([type, normalised])
+  @@index([normalised])
+  @@index([productId])
 }
 
 enum EnquiryStatus {
@@ -176,6 +213,7 @@ model OrderLineItem {
 }
 
 enum OrderStatus {
+  PENDING_REVIEW
   RECEIVED
   PICKING
   PACKED
@@ -184,6 +222,7 @@ enum OrderStatus {
 }
 
 enum PaymentMethod {
+  TRADE_ACCOUNT
   CARD
   BACS
 }
@@ -296,4 +335,173 @@ model Campaign {
   updatedAt   DateTime  @updatedAt
 
   @@index([isActive])
+}
+
+/// Imported OEM catalogue document. Isolated from the sellable Product catalogue.
+model OemDocument {
+  id           String        @id @default(cuid())
+  sourcePath   String        @unique
+  title        String
+  sourceHash   String
+  importedAt   DateTime      @default(now())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  sections     OemSection[]
+  machines     OemMachine[]
+  searchEntries OemSearchEntry[]
+
+  @@index([sourceHash])
+}
+
+model OemSection {
+  id           String        @id @default(cuid())
+  documentId   String
+  document     OemDocument   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  pageNumber   Int?
+  title        String?
+  content      String
+  tables       OemTable[]
+  images       OemImage[]
+  machines     OemMachine[]
+  searchEntries OemSearchEntry[]
+
+  @@index([documentId, pageNumber])
+}
+
+model OemMachine {
+  id           String        @id @default(cuid())
+  documentId   String
+  document     OemDocument   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sectionId    String?
+  section      OemSection?   @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  brand        String
+  model        String?
+  displayName  String
+  sourcePage   Int?
+  references   OemReference[]
+  tables       OemTable[]
+  searchEntries OemSearchEntry[]
+
+  @@unique([documentId, displayName])
+  @@index([brand])
+  @@index([model])
+}
+
+model OemReference {
+  id             String        @id @default(cuid())
+  machineId      String
+  machine       OemMachine    @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  application    String
+  oemPartNumber  String
+  sourcePage     Int?
+  searchEntries  OemSearchEntry[]
+
+  @@index([oemPartNumber])
+  @@index([machineId, application])
+}
+
+model OemTable {
+  id           String        @id @default(cuid())
+  sectionId    String
+  section      OemSection    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  machineId    String?
+  machine      OemMachine?   @relation(fields: [machineId], references: [id], onDelete: SetNull)
+  sourcePage   Int?
+  tableIndex   Int
+  headers      Json
+  rows         Json
+
+  @@unique([sectionId, tableIndex])
+  @@index([machineId])
+}
+
+model OemImage {
+  id         String      @id @default(cuid())
+  sectionId  String
+  section    OemSection  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  sourcePage Int?
+  path       String
+  alt        String?
+
+  @@index([sectionId])
+}
+
+/// Search projection rebuilt by the local indexing script.
+model OemSearchEntry {
+  id           String        @id @default(cuid())
+  documentId   String
+  document     OemDocument   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sectionId    String?
+  section      OemSection?   @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  machineId    String?
+  machine      OemMachine?   @relation(fields: [machineId], references: [id], onDelete: SetNull)
+  referenceId  String?
+  reference    OemReference?  @relation(fields: [referenceId], references: [id], onDelete: SetNull)
+  kind         String
+  title        String
+  content      String
+  normalizedText String
+
+  @@index([documentId])
+  @@index([machineId])
+  @@index([referenceId])
+}
+
+/// Reserved for Phase 2 OEM-to-Duraforge mapping; no mappings are imported yet.
+/// Keyed on the exact OEM part number (not OemReference.id), so re-imports do not remove mappings.
+model OemReferenceMapping {
+  id                    String        @id @default(cuid())
+  brand                 String
+  oemPartNumber         String
+  duraforgePartNumber   String?
+  duraforgeIdentifierId String?
+  status                String         @default("UNMAPPED")
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@unique([brand, oemPartNumber, duraforgePartNumber])
+  @@index([oemPartNumber])
+  @@index([duraforgePartNumber])
+  @@index([duraforgeIdentifierId])
+}
+
+enum OemEnquiryStatus {
+  DRAFT
+  SUBMITTED
+  REVIEWED
+}
+
+/// Customer OEM part enquiry. Each user has one open DRAFT; submitting moves it to SUBMITTED for sales review. No prices, no order.
+model OemEnquiry {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      OemEnquiryStatus @default(DRAFT)
+  note        String?
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  items       OemEnquiryItem[]
+
+  @@index([userId, status])
+  @@index([status, submittedAt])
+}
+
+/// Snapshot of an OEM reference as added. No FK to OemReference: re-imports recreate reference rows.
+/// Phase 2 can add a nullable duraforgePartNumber here without changing existing columns.
+model OemEnquiryItem {
+  id            String     @id @default(cuid())
+  enquiryId     String
+  enquiry       OemEnquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  brand         String
+  machineName   String
+  application   String
+  oemPartNumber String
+  quantity      Int
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([enquiryId, brand, machineName, application, oemPartNumber])
+  @@index([oemPartNumber])
 }

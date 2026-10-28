@@ -27,16 +27,16 @@ export default function ContactPage() {
               DA10 1BZ
             </address>
             <p className="mt-3">
-              <a href="tel:01474555555" className="font-semibold text-orange hover:underline">
-                01474 555 555
+              <a href="tel:+447417309751" className="font-semibold text-orange hover:underline">
+                +44 7417 309 751
               </a>
             </p>
             <p className="mt-2">
               <a
-                href="mailto:trade@duraforge.co.uk"
+                href="mailto:sales@duraforge.co.uk"
                 className="text-orange hover:underline"
               >
-                trade@duraforge.co.uk
+                sales@duraforge.co.uk
               </a>
             </p>
           </div>

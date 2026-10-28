@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 
 const COMPANY = {
   name: "Duraforge UK Ltd",
-  addressLines: ["Unit 1, Industrial Estate", "Swanscombe", "Kent", "DA10 1BZ"],
+  addressLines: ["Swanscombe", "Kent", "DA10 1BZ"],
   companyNo: "16679838",
-  vatNumber: process.env.COMPANY_VAT_NUMBER ?? "GB — pending registration",
+  vatNumber: process.env.COMPANY_VAT_NUMBER || "VAT registration pending",
 };
 
 export default async function InvoicePage({
@@ -62,11 +62,11 @@ export default async function InvoicePage({
             <p className="mt-2 text-xs text-slate-brand">
               Company No. {COMPANY.companyNo}
               <br />
-              VAT No. {COMPANY.vatNumber}
+              {COMPANY.vatNumber}
             </p>
           </div>
           <div className="text-right">
-            <h1 className="font-display text-xl font-extrabold text-navy">VAT INVOICE</h1>
+            <h1 className="font-display text-xl font-extrabold text-navy">TRADE ORDER</h1>
             <p className="mt-2 text-sm font-mono font-bold text-navy">
               {order.orderNumber}
             </p>
@@ -126,7 +126,7 @@ export default async function InvoicePage({
               <dd>{gbp(order.subtotalExVat)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-slate-brand">VAT @ 20%</dt>
+              <dt className="text-slate-brand">VAT</dt>
               <dd>{gbp(order.vatAmount)}</dd>
             </div>
             <div className="flex justify-between border-t border-slate-200 pt-2 font-bold text-navy">
@@ -138,8 +138,8 @@ export default async function InvoicePage({
 
         <footer className="mt-10 border-t border-slate-100 pt-4 text-xs text-slate-brand">
           <p>
-            Payment method: {order.paymentMethod === "bacs" ? "BACS bank transfer" : "Card"}
-            {order.paymentMethod === "bacs" && " — order held until payment clears."}
+            Payment: No payment taken. Trade terms and any 30-day credit are
+            subject to Duraforge approval.
           </p>
           <p className="mt-1">
             Thank you for your order. Trade terms apply. Returns for faulty goods only.

@@ -57,7 +57,7 @@ export function AdminOrderActions({
     <div className="rounded-2xl border border-slate-200 bg-white p-6">
       <h2 className="font-display font-bold text-navy">Update status</h2>
       <p className="mt-1 text-xs text-slate-brand">
-        Tap the stage — warehouse-friendly, five buttons.
+        Review the request, then move it into fulfilment.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">

@@ -8,6 +8,7 @@ const footerCols = [
       { label: "All Seal Kits", href: "/shop" },
       { label: "Individual Seals", href: "/shop/individual-seals" },
       { label: "Cross-Reference", href: "/cross-reference" },
+      { label: "OEM Knowledge Base", href: "/oem-knowledge-base" },
     ],
   },
   {

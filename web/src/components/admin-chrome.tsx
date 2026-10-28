@@ -8,6 +8,7 @@ const adminLinks = [
   { href: "/admin/customers", label: "Customers" },
   { href: "/admin/campaigns", label: "Campaigns" },
   { href: "/admin/enquiries", label: "Enquiries" },
+  { href: "/admin/oem-enquiries", label: "OEM enquiries" },
   { href: "/admin/audit", label: "Audit log" },
   { href: "/admin/security", label: "Security" },
 ];

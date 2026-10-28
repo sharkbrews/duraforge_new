@@ -23,7 +23,7 @@ export default async function AdminDashboardPage() {
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Open orders" value={String(openOrders)} href="/admin/orders" />
         <StatCard label="Total orders" value={String(orders.length)} href="/admin/orders" />
-        <StatCard label="Revenue (inc-VAT)" value={gbp(revenue)} href="/admin/orders" />
+        <StatCard label="Requested order value" value={gbp(revenue)} href="/admin/orders" />
         <StatCard
           label="New enquiries"
           value={String(newEnquiries)}

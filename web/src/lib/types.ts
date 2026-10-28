@@ -35,13 +35,14 @@ export interface OrderLineItem {
 }
 
 export type PickPackStatus =
+  | "pending_review"
   | "received"
   | "picking"
   | "packed"
   | "despatched"
   | "delivered";
 
-export type PaymentMethod = "card" | "bacs";
+export type PaymentMethod = "trade_account" | "card" | "bacs";
 
 export interface Order {
   id: string;

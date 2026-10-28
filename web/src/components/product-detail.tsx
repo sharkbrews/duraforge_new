@@ -20,7 +20,10 @@ export function ProductDetail({ product }: { product: Product }) {
       <div>
         <div className="flex flex-wrap gap-1.5">
           <span className="rounded bg-navy/10 px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide text-navy">
-            {product.sku}
+            {product.dfSku}
+          </span>
+          <span className="rounded bg-slate-brand/10 px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-wide text-slate-brand">
+            Alias {product.sku}
           </span>
           <span className="rounded bg-orange/10 px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide text-orange">
             {product.material}
@@ -79,7 +82,7 @@ export function ProductDetail({ product }: { product: Product }) {
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-start">
             <AddToBasketButton sku={product.sku} className="flex-1 rounded-lg bg-orange px-5 py-3 font-semibold text-white transition-colors hover:bg-orange-600" />
             <a
-              href={`https://wa.me/440000000000?text=Hi%20Duraforge%2C%20I%20need%20the%20${encodeURIComponent(
+              href={`https://wa.me/447417309751?text=Hi%20Duraforge%2C%20I%20need%20the%20${encodeURIComponent(
                 product.sku,
               )}%20kit`}
               target="_blank"

@@ -33,12 +33,12 @@ export function ProductCard({ product }: { product: Product }) {
 
       <div className="flex flex-1 flex-col justify-between p-4">
         <div>
-          <Link href={`/product/${product.sku}`}>
+          <Link href={`/product/${product.dfSku}`}>
             <h3 className="min-h-[44px] font-display text-sm font-bold leading-snug text-navy transition-colors group-hover:text-orange">
               {product.name}
             </h3>
           </Link>
-          <p className="mt-1.5 font-mono text-[11px] text-slate-brand">{product.sku}</p>
+          <p className="mt-1.5 font-mono text-[11px] text-slate-brand">{product.dfSku}</p>
           <p className="mt-2 text-xs text-slate-brand">
             Rod <strong className="text-ink">{product.rod}mm</strong> · Bore{" "}
             <strong className="text-ink">{product.bore}mm</strong> · H{" "}

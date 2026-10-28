@@ -29,6 +29,7 @@ export function ShopBrowser({
       const matchesQuery =
         !q ||
         p.name.toLowerCase().includes(q) ||
+        p.dfSku.toLowerCase().includes(q) ||
         p.sku.toLowerCase().includes(q) ||
         p.model.toLowerCase().includes(q) ||
         p.crossRefs.some((c) => c.part.toLowerCase().includes(q));

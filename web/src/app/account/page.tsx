@@ -56,7 +56,7 @@ export default async function AccountPage() {
               <p className="mt-1 text-sm text-slate-brand">
                 {statusLabels[lastOrder.status] ?? lastOrder.status}
               </p>
-              <p className="mt-2 text-sm font-semibold">{gbp(lastOrder.totalIncVat)} inc-VAT</p>
+              <p className="mt-2 text-sm font-semibold">{gbp(lastOrder.totalIncVat)} requested value</p>
               <Link
                 href={`/account/orders/${encodeURIComponent(lastOrder.orderNumber)}`}
                 className="mt-4 inline-block text-sm font-semibold text-orange hover:underline"
