@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 };
 
 const statusLabels: Record<string, string> = {
+  pending_review: "Pending trade review",
   received: "Order received — we've got it, we're on it 💪",
   picking: "Picking — rummaging through the shelves…",
   packed: "Packed & quality checked",

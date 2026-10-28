@@ -11,6 +11,48 @@ import {
 } from "@/lib/products";
 import { gbp } from "@/lib/format";
 
+function Step({
+  n,
+  label,
+  value,
+  onChange,
+  options,
+  disabled,
+  placeholder,
+}: {
+  n: number;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  disabled?: boolean;
+  placeholder: string;
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-2">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange text-xs font-bold text-white">
+          {n}
+        </span>
+        <span className="text-sm font-bold text-navy">{label}</span>
+      </div>
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-3 text-sm font-medium text-ink outline-none focus:border-orange focus:ring-2 focus:ring-orange/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      >
+        <option value="">{placeholder}</option>
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 export function FinderTool() {
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
@@ -24,48 +66,6 @@ export function FinderTool() {
   );
 
   const result = brand && model && position ? findKit(brand, model, position) : undefined;
-
-  function Step({
-    n,
-    label,
-    value,
-    onChange,
-    options,
-    disabled,
-    placeholder,
-  }: {
-    n: number;
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    options: string[];
-    disabled?: boolean;
-    placeholder: string;
-  }) {
-    return (
-      <div>
-        <div className="mb-2 flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange text-xs font-bold text-white">
-            {n}
-          </span>
-          <span className="text-sm font-bold text-navy">{label}</span>
-        </div>
-        <select
-          value={value}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-3 text-sm font-medium text-ink outline-none focus:border-orange focus:ring-2 focus:ring-orange/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-        >
-          <option value="">{placeholder}</option>
-          {options.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8">

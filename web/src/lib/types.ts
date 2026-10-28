@@ -44,6 +44,14 @@ export type PickPackStatus =
 
 export type PaymentMethod = "trade_account" | "card" | "bacs";
 
+export type InvoicePaymentStatus =
+  | "unpaid"
+  | "partially_paid"
+  | "paid_pending_reconciliation"
+  | "paid_reconciled";
+
+export type TradeTermsStatus = "pending" | "approved_net_30" | "declined";
+
 export interface Order {
   id: string;
   orderNumber: string;
@@ -56,6 +64,12 @@ export interface Order {
   vatAmount: number;
   totalIncVat: number;
   paymentMethod: PaymentMethod;
+  paymentStatus: InvoicePaymentStatus;
+  tradeTermsStatus: TradeTermsStatus;
+  tradeTermsApprovedAt?: string;
+  tradeTermsApprovedBy?: string;
+  paidAt?: string;
+  reconciledAt?: string;
   shippingAddress: Address;
   billingAddress: Address;
   notes?: string;

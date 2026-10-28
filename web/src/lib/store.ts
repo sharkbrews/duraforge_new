@@ -11,6 +11,8 @@ import type {
   OrderLineItem,
   OrderStatusEvent,
   PaymentMethod,
+  InvoicePaymentStatus,
+  TradeTermsStatus,
   PickPackStatus,
   User,
   UserBadgeEarned,
@@ -106,6 +108,12 @@ function mapOrder(
     vatAmount: row.vatAmount,
     totalIncVat: row.totalIncVat,
     paymentMethod: row.paymentMethod.toLowerCase() as PaymentMethod,
+    paymentStatus: row.paymentStatus.toLowerCase() as InvoicePaymentStatus,
+    tradeTermsStatus: row.tradeTermsStatus.toLowerCase() as TradeTermsStatus,
+    tradeTermsApprovedAt: row.tradeTermsApprovedAt?.toISOString(),
+    tradeTermsApprovedBy: row.tradeTermsApprovedBy ?? undefined,
+    paidAt: row.paidAt?.toISOString(),
+    reconciledAt: row.reconciledAt?.toISOString(),
     shippingAddress: address,
     billingAddress: address,
     notes: row.notes ?? undefined,
@@ -279,40 +287,15 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
           })),
         },
         statusEvents: {
-          create: { status: "RECEIVED" },
+          create: { status: "PENDING_REVIEW" },
         },
       },
       include: { lineItems: true, statusEvents: true },
     });
 
-    const coins = coinsForOrder(input.totalIncVat);
-    if (coins > 0) {
-      const updated = await tx.user.update({
-        where: { id: input.userId },
-        data: { duraCoinsBalance: { increment: coins } },
-      });
-      if (updated.duraCoinsBalance >= PRO_MEMBER_THRESHOLD && !updated.isProMember) {
-        await tx.user.update({
-          where: { id: input.userId },
-          data: { isProMember: true },
-        });
-      }
-      await tx.duraCoinLedger.create({
-        data: {
-          userId: input.userId,
-          amount: coins,
-          reason: `Order ${orderNumber}`,
-          orderId: order.id,
-        },
-      });
-    }
-
-    await awardBadgesInTx(tx, input.userId, order);
-
     return order;
   });
 
-  const coins = coinsForOrder(input.totalIncVat);
   trackEmailEvent("order.placed", {
     email: input.email,
     userId: input.userId,
@@ -327,15 +310,6 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   }).catch((error) => {
     console.error("Trade order notification failed:", error);
   });
-  if (coins > 0) {
-    trackEmailEvent("duracoins.earned", {
-      email: input.email,
-      userId: input.userId,
-      orderNumber: row.orderNumber,
-      coins,
-    });
-  }
-
   return mapOrder(row);
 }
 
@@ -381,7 +355,13 @@ export async function updateOrderStatus(
     | "DESPATCHED"
     | "DELIVERED";
 
-  const row = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
+    const existing = await tx.order.findUnique({
+      where: { orderNumber: input.orderNumber },
+      select: { id: true, userId: true, status: true, totalIncVat: true },
+    });
+    if (!existing) return null;
+
     const updated = await tx.order.update({
       where: { orderNumber: input.orderNumber },
       data: {
@@ -401,13 +381,154 @@ export async function updateOrderStatus(
       },
     });
 
-    return tx.order.findUnique({
+    const order = await tx.order.findUnique({
       where: { id: updated.id },
       include: { lineItems: true, statusEvents: true },
     });
+    if (!order) return null;
+
+    return { order };
   });
 
-  return row ? mapOrder(row) : undefined;
+  if (!result) return undefined;
+
+  return mapOrder(result.order);
+}
+
+export interface ReconcileOrderPaymentInput {
+  orderNumber: string;
+  paymentStatus: InvoicePaymentStatus;
+  paidAt?: Date;
+}
+
+export class PaymentReconciliationError extends Error {}
+
+export interface UpdateTradeTermsInput {
+  orderNumber: string;
+  status: TradeTermsStatus;
+  approvedBy: string;
+}
+
+export async function updateTradeTerms(
+  input: UpdateTradeTermsInput,
+): Promise<Order | undefined> {
+  const dbStatus = input.status.toUpperCase() as
+    | "PENDING"
+    | "APPROVED_NET_30"
+    | "DECLINED";
+  const existing = await prisma.order.findUnique({
+    where: { orderNumber: input.orderNumber },
+    select: { id: true },
+  });
+  if (!existing) return undefined;
+
+  const row = await prisma.order.update({
+    where: { id: existing.id },
+    data: {
+      tradeTermsStatus: dbStatus,
+      tradeTermsApprovedAt:
+        dbStatus === "PENDING" ? null : new Date(),
+      tradeTermsApprovedBy:
+        dbStatus === "PENDING" ? null : input.approvedBy,
+    },
+    include: { lineItems: true, statusEvents: true },
+  });
+  return mapOrder(row);
+}
+
+export async function reconcileOrderPayment(
+  input: ReconcileOrderPaymentInput,
+): Promise<Order | undefined> {
+  const result = await prisma.$transaction(async (tx) => {
+    const existing = await tx.order.findUnique({
+      where: { orderNumber: input.orderNumber },
+      select: {
+        id: true,
+        userId: true,
+        paymentStatus: true,
+        totalIncVat: true,
+        orderNumber: true,
+      },
+    });
+    if (!existing) return null;
+
+    const dbPaymentStatus = input.paymentStatus.toUpperCase() as
+      | "UNPAID"
+      | "PARTIALLY_PAID"
+      | "PAID_PENDING_RECONCILIATION"
+      | "PAID_RECONCILED";
+    if (
+      existing.paymentStatus === "PAID_RECONCILED" &&
+      dbPaymentStatus !== "PAID_RECONCILED"
+    ) {
+      throw new PaymentReconciliationError(
+        "A paid and reconciled invoice cannot be moved backwards.",
+      );
+    }
+    const reconciling =
+      existing.paymentStatus !== "PAID_RECONCILED" &&
+      dbPaymentStatus === "PAID_RECONCILED";
+
+    const updated = await tx.order.update({
+      where: { id: existing.id },
+      data: {
+        paymentStatus: dbPaymentStatus,
+        paidAt:
+          dbPaymentStatus === "UNPAID"
+            ? null
+            : input.paidAt ?? new Date(),
+        reconciledAt:
+          dbPaymentStatus === "PAID_RECONCILED" ? new Date() : null,
+      },
+      include: { lineItems: true, statusEvents: true },
+    });
+
+    let coinsAwarded = 0;
+    if (reconciling) {
+      coinsAwarded = coinsForOrder(updated.totalIncVat);
+      if (coinsAwarded > 0) {
+        const user = await tx.user.update({
+          where: { id: existing.userId },
+          data: { duraCoinsBalance: { increment: coinsAwarded } },
+        });
+        if (user.duraCoinsBalance >= PRO_MEMBER_THRESHOLD && !user.isProMember) {
+          await tx.user.update({
+            where: { id: existing.userId },
+            data: { isProMember: true },
+          });
+        }
+        await tx.duraCoinLedger.create({
+          data: {
+            userId: existing.userId,
+            amount: coinsAwarded,
+            reason: `Paid invoice ${existing.orderNumber}`,
+            orderId: existing.id,
+          },
+        });
+      }
+
+      await awardBadgesInTx(tx, existing.userId, updated);
+    }
+
+    return { order: updated, reconciling, coinsAwarded };
+  });
+
+  if (!result) return undefined;
+  if (result.reconciling) {
+    trackEmailEvent("order.fulfilled", {
+      orderNumber: result.order.orderNumber,
+      userId: result.order.userId,
+      paymentStatus: "paid_reconciled",
+    });
+    if (result.coinsAwarded > 0) {
+      trackEmailEvent("duracoins.earned", {
+        orderNumber: result.order.orderNumber,
+        userId: result.order.userId,
+        coins: result.coinsAwarded,
+      });
+    }
+  }
+  return mapOrder(result.order);
 }
 
 // ---------------------------------------------------------------------------
@@ -562,7 +683,9 @@ async function awardBadgesInTx(
   userId: string,
   order: DbOrder & { lineItems: DbOrderLineItem[] },
 ): Promise<void> {
-  const orderCount = await tx.order.count({ where: { userId } });
+  const orderCount = await tx.order.count({
+    where: { userId, paymentStatus: "PAID_RECONCILED" },
+  });
   if (orderCount === 1) {
     await awardBadgeIfNew(tx, userId, "first_seal");
   }
@@ -571,7 +694,7 @@ async function awardBadgesInTx(
   }
 
   const allOrders = await tx.order.findMany({
-    where: { userId },
+    where: { userId, paymentStatus: "PAID_RECONCILED" },
     include: { lineItems: true },
   });
   const brands = new Set<string>();

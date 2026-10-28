@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminOrderActions } from "@/components/admin-order-actions";
+import { AdminPaymentActions } from "@/components/admin-payment-actions";
+import { AdminTradeTermsActions } from "@/components/admin-trade-terms-actions";
 import { OrderTracker } from "@/components/order-tracker";
 import { getOrderByNumber } from "@/lib/store";
 import { gbp } from "@/lib/format";
@@ -41,6 +43,18 @@ export default async function AdminOrderDetailPage({
           trackingNumber={order.trackingNumber}
         />
         <OrderTracker order={order} />
+      </div>
+      <div className="mt-6">
+        <AdminPaymentActions
+          orderNumber={order.orderNumber}
+          currentStatus={order.paymentStatus}
+        />
+      </div>
+      <div className="mt-6">
+        <AdminTradeTermsActions
+          orderNumber={order.orderNumber}
+          currentStatus={order.tradeTermsStatus}
+        />
       </div>
 
       <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">

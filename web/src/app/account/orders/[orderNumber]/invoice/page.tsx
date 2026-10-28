@@ -138,8 +138,19 @@ export default async function InvoicePage({
 
         <footer className="mt-10 border-t border-slate-100 pt-4 text-xs text-slate-brand">
           <p>
-            Payment: No payment taken. Trade terms and any 30-day credit are
-            subject to Duraforge approval.
+            Payment status:{" "}
+            {order.paymentStatus === "paid_reconciled"
+              ? "Paid and reconciled"
+              : "Not paid and reconciled"}
+            . Trade terms and any 30-day credit are subject to Duraforge approval.
+          </p>
+          <p className="mt-1">
+            30-day terms:{" "}
+            {order.tradeTermsStatus === "approved_net_30"
+              ? "Approved"
+              : order.tradeTermsStatus === "declined"
+                ? "Not approved"
+                : "Pending review"}
           </p>
           <p className="mt-1">
             Thank you for your order. Trade terms apply. Returns for faulty goods only.
